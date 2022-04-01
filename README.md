@@ -1,1 +1,1 @@
-# An EVM Child chain (EVA)
+# An EVM Child Chain (EVA)
