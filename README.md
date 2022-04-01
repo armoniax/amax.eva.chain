@@ -5,4 +5,4 @@ EVA is the first child chain of Armonia Multichain network and adopts EVM for it
 ## Design goals
 * stay 100% compatible with Ethereum technology and ecosystem applications and toolchains
 * leverage `$AMAX` as the native token for gas consumption and fees reward for miners
-* adopts `DPoS` consenus algorithm
+* adopt `DPoS` consenus algorithm
