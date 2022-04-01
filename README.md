@@ -1,1 +1,1 @@
-# amax.eva.chain
+# An EVM Child chain (EVA)
