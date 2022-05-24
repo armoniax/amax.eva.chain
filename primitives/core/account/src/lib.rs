@@ -21,6 +21,7 @@
 //! It includes the Verify and IdentifyAccount traits for the AccountId20
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::from_over_into)]
 
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
