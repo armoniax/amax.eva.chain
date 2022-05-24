@@ -1,0 +1,23 @@
+[package]
+name = "primitives-core"
+version = "0.1.0"
+description = ""
+authors = [""]
+homepage = ""
+edition = "2021"
+repository = ""
+
+[dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
+
+account = { path = "./account", default-features = false }
+
+[features]
+default = [ "std" ]
+std = [
+    "sp-core/std",
+    "sp-runtime/std",
+
+    "account/std",
+]
