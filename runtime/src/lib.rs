@@ -7,10 +7,9 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::{
-    fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
+    fg_primitives, AuthorityList as GrandpaAuthorityList,
 };
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -22,6 +21,9 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+
+pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -41,7 +43,9 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-pub use primitives_core::{BlockNumber, Signature, AccountId, Balance, Index, Hash, Block as NodeBlock};
+pub use primitives_core::{
+    AccountId, Balance, Block as NodeBlock, BlockNumber, Hash, Index, Signature,
+};
 
 impl_opaque_keys! {
     pub struct SessionKeys {

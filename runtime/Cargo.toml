@@ -23,6 +23,7 @@ sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
@@ -66,6 +67,7 @@ std = [
   "sp-consensus-aura/std",
   "sp-core/std",
   "sp-inherents/std",
+  "sp-finality-grandpa/std",
   "sp-offchain/std",
   "sp-runtime/std",
   "sp-session/std",

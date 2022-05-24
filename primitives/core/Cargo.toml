@@ -14,10 +14,5 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkad
 account = { path = "./account", default-features = false }
 
 [features]
-default = [ "std" ]
-std = [
-    "sp-core/std",
-    "sp-runtime/std",
-
-    "account/std",
-]
+default = ["std"]
+std = ["sp-core/std", "sp-runtime/std", "account/std"]
