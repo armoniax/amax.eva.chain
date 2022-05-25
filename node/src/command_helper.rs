@@ -27,7 +27,6 @@ use sc_cli::Result;
 use sc_client_api::BlockBackend;
 use sp_core::{Encode, Pair};
 use sp_inherents::{InherentData, InherentDataProvider};
-use sp_keyring::Sr25519Keyring;
 use sp_runtime::{OpaqueExtrinsic, SaturatedConversion};
 
 use std::{sync::Arc, time::Duration};
@@ -48,7 +47,8 @@ impl BenchmarkExtrinsicBuilder {
 
 impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
     fn remark(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-        let acc = Sr25519Keyring::Bob.pair();
+        let acc = crate::key_helper::benchmark_pair();
+
         let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
             self.client.as_ref(),
             acc,
@@ -66,7 +66,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
 /// Note: Should only be used for benchmarking.
 pub fn create_benchmark_extrinsic(
     client: &FullClient,
-    sender: sp_core::sr25519::Pair,
+    sender: sp_core::ecdsa::Pair,
     call: runtime::Call,
     nonce: u32,
 ) -> runtime::UncheckedExtrinsic {
@@ -112,10 +112,12 @@ pub fn create_benchmark_extrinsic(
     );
     let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
+    let signed =
+        crate::key_helper::get_account_id_from_pair(sender).expect("must can generate account_id");
     runtime::UncheckedExtrinsic::new_signed(
         call,
-        sp_runtime::AccountId32::from(sender.public()).into(),
-        runtime::Signature::Sr25519(signature),
+        signed.into(),
+        runtime::Signature::from(signature),
         extra,
     )
 }

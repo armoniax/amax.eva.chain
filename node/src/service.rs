@@ -1,6 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use amax_eva_runtime::{self, opaque::Block, RuntimeApi};
+use amax_eva_runtime::{self, NodeBlock, RuntimeApi};
 use sc_client_api::{BlockBackend, ExecutorProvider};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 pub use sc_executor::NativeElseWasmExecutor;
@@ -32,9 +32,9 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 }
 
 pub(crate) type FullClient =
-    sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
-type FullBackend = sc_service::TFullBackend<Block>;
-type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+    sc_service::TFullClient<NodeBlock, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+type FullBackend = sc_service::TFullBackend<NodeBlock>;
+type FullSelectChain = sc_consensus::LongestChain<FullBackend, NodeBlock>;
 
 pub fn new_partial(
     config: &Configuration,
@@ -43,16 +43,16 @@ pub fn new_partial(
         FullClient,
         FullBackend,
         FullSelectChain,
-        sc_consensus::DefaultImportQueue<Block, FullClient>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        sc_consensus::DefaultImportQueue<NodeBlock, FullClient>,
+        sc_transaction_pool::FullPool<NodeBlock, FullClient>,
         (
             sc_finality_grandpa::GrandpaBlockImport<
                 FullBackend,
-                Block,
+                NodeBlock,
                 FullClient,
                 FullSelectChain,
             >,
-            sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+            sc_finality_grandpa::LinkHalf<NodeBlock, FullClient, FullSelectChain>,
             Option<Telemetry>,
         ),
     >,
@@ -83,7 +83,7 @@ pub fn new_partial(
     );
 
     let (client, backend, keystore_container, task_manager) =
-        sc_service::new_full_parts::<Block, RuntimeApi, _>(
+        sc_service::new_full_parts::<NodeBlock, RuntimeApi, _>(
             config,
             telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
             executor,

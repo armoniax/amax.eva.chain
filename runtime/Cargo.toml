@@ -23,6 +23,7 @@ sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
@@ -49,6 +50,9 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 frame-system-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false, optional = true }
 hex-literal = { version = "0.3.4", optional = true }
 
+# local
+primitives-core = { path = "../primitives/core", default-features = false }
+
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 
@@ -63,6 +67,7 @@ std = [
   "sp-consensus-aura/std",
   "sp-core/std",
   "sp-inherents/std",
+  "sp-finality-grandpa/std",
   "sp-offchain/std",
   "sp-runtime/std",
   "sp-session/std",
@@ -83,6 +88,7 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
 
+  "primitives-core/std",
 ]
 runtime-benchmarks = [
   "hex-literal",
