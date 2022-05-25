@@ -189,7 +189,7 @@ pub fn run() -> sc_cli::Result<()> {
 				You can enable it with `--features try-runtime`."
             .into()),
         None => {
-            let runner = cli.create_runner(&cli.run)?;
+            let runner = cli.create_runner_for_run_cmd(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
                 service::new_full(config).map_err(sc_cli::Error::Service)
             })
