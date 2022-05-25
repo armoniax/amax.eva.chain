@@ -17,17 +17,45 @@ pub struct Cli {
     pub run: RunCmd,
 }
 
+#[derive(Copy, Clone)]
+enum ChainNetworkType {
+    Dev,
+    Testnet,
+    Mainnet,
+}
+static mut CHAIN_NETWORK_TYPE: ChainNetworkType = ChainNetworkType::Mainnet;
+fn set_chain_network_type(network_type: ChainNetworkType) {
+    // this is safe, for this function should only be called in `create_runner_for_run_cmd`.
+    unsafe {
+        CHAIN_NETWORK_TYPE = network_type;
+    }
+}
+fn get_chain_network_type() -> ChainNetworkType {
+    // this is safe, for this function is not written when called.
+    unsafe { CHAIN_NETWORK_TYPE }
+}
+
 impl DefaultConfigurationValues for Cli {
     fn p2p_listen_port() -> u16 {
-        9922
+        match get_chain_network_type() {
+            ChainNetworkType::Dev => 30333,
+            ChainNetworkType::Mainnet => 9922,
+            ChainNetworkType::Testnet => 19922,
+        }
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        9944
+        match get_chain_network_type() {
+            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9944,
+            ChainNetworkType::Testnet => 19944,
+        }
     }
 
     fn rpc_http_listen_port() -> u16 {
-        9933
+        match get_chain_network_type() {
+            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9933,
+            ChainNetworkType::Testnet => 19933,
+        }
     }
 
     fn prometheus_listen_port() -> u16 {
@@ -130,6 +158,16 @@ impl Cli {
     /// This function is same as `create_runner` in `SubstrateCli`, but it just uses for `RunCmd`.
     pub fn create_runner_for_run_cmd(&self, command: &RunCmd) -> Result<Runner<Self>> {
         let tokio_runtime = build_runtime()?;
+        // a hacky way to set network type directly.
+        let is_dev = self.is_dev()?;
+        let chain_id = self.chain_id(is_dev)?;
+        let chain_spec = self.load_spec(&chain_id)?;
+        match chain_spec.id() {
+            "dev" | "local_testnet" => set_chain_network_type(ChainNetworkType::Dev),
+            // TODO add mainnet and testnet
+            _ => set_chain_network_type(ChainNetworkType::Testnet),
+        }
+
         // we use our custom configuration (`Self`) to replace `RunCmd`'s configuration.
         let config = CliConfiguration::<Self>::create_configuration(
             self,
