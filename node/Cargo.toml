@@ -21,6 +21,8 @@ libsecp256k1 = { version = "0.6", features = ["hmac"] }
 tiny-bip39 = "0.8"
 tiny-hderive = "0.3.0"
 sha3 = "0.9"
+jsonrpc-pubsub = "18.0.0"
+futures = "0.3"
 
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", features = [
   "wasmtime",
@@ -53,6 +55,7 @@ jsonrpc-core = "18.0.0"
 sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-rpc-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
@@ -62,6 +65,15 @@ pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrat
 # These dependencies are used for runtime benchmarking
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+
+# Fontier
+fc-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fc-db = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fc-rpc-core = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fc-consensus = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fc-mapping-sync = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
+fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
 
 # Local Dependencies
 amax-eva-runtime = { path = "../runtime" }
