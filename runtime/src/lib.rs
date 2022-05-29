@@ -297,8 +297,8 @@ where
 }
 
 parameter_types! {
-    // TODO need to set chainid
-    pub const ChainId: u64 = 42;
+    // TODO need to set chainid(for testnet version we will set 161)
+    pub const ChainId: u64 = 160;
     // TODO need to check gaslimt with team
     pub BlockGasLimit: U256 = U256::from(u32::max_value());
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();

@@ -1,6 +1,6 @@
-use sc_service::ChainType;
+use sc_service::{ChainType, Properties};
 
-use amax_eva_runtime::{AccountId, AuraId, GrandpaId, WASM_BINARY};
+use amax_eva_runtime::{AccountId, AuraId, GrandpaId, SS58Prefix, WASM_BINARY};
 // genesis config
 use amax_eva_runtime::{
     AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SudoConfig, SystemConfig,
@@ -11,6 +11,14 @@ use amax_eva_runtime::{
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+
+fn properties() -> Properties {
+    let mut properties = Properties::new();
+    properties.insert("tokenSymbol".into(), "AMAX".into());
+    properties.insert("tokenDecimals".into(), 18.into());
+    properties.insert("ss58Format".into(), SS58Prefix::get().into());
+    properties
+}
 
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
@@ -50,7 +58,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         None,
         // Properties
-        None,
+        Some(properties()),
         // Extensions
         None,
     ))
@@ -101,7 +109,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Properties
         None,
-        None,
+        Some(properties()),
         // Extensions
         None,
     ))
