@@ -12,6 +12,7 @@ impl<R> FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
 {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self(Default::default())
     }

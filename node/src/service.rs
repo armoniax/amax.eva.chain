@@ -149,7 +149,7 @@ pub fn new_partial(
     let import_queue =
         sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
             block_import: frontier_block_import.clone(),
-            justification_import: Some(Box::new(grandpa_block_import.clone())),
+            justification_import: Some(Box::new(grandpa_block_import)),
             client: client.clone(),
             create_inherent_data_providers: move |_, ()| async move {
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
