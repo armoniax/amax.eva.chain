@@ -116,7 +116,7 @@ pub fn create_benchmark_extrinsic(
         crate::key_helper::get_account_id_from_pair(sender).expect("must can generate account_id");
     runtime::UncheckedExtrinsic::new_signed(
         call,
-        signed.into(),
+        signed,
         runtime::Signature::from(signature),
         extra,
     )
