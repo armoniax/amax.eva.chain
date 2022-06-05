@@ -3,6 +3,8 @@ use sc_service::{ChainType, Properties};
 // Local
 use amax_eva_runtime::{AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
 
+use crate::chain_spec::{authority_keys_from_seed, generate_dev_accounts};
+
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -20,7 +22,7 @@ fn properties() -> Properties {
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
-    let accounts = crate::key_helper::generate_dev_accounts(10);
+    let accounts = generate_dev_accounts(10);
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -32,7 +34,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![crate::key_helper::authority_keys_from_seed("Alice")],
+                vec![authority_keys_from_seed("Alice")],
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
@@ -64,7 +66,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
-    let accounts = crate::key_helper::generate_dev_accounts(10);
+    let accounts = generate_dev_accounts(10);
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -76,10 +78,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![
-                    crate::key_helper::authority_keys_from_seed("Alice"),
-                    crate::key_helper::authority_keys_from_seed("Bob"),
-                ],
+                vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
@@ -122,7 +121,7 @@ fn testnet_genesis(
 ) -> GenesisConfig {
     use amax_eva_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
     GenesisConfig {
-        // System && Utility stuff.
+        // System && Utility.
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
@@ -131,20 +130,20 @@ fn testnet_genesis(
             // Assign network admin rights.
             key: Some(root_key),
         },
-        // Monetary stuff.
+        // Monetary.
         balances: BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
         },
         transaction_payment: Default::default(),
-        // Consesnsus stuff.
+        // Consesnsus.
         aura: AuraConfig {
             authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
         },
         grandpa: GrandpaConfig {
             authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
         },
-        // Evm compatibility stuff.
+        // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
         base_fee: Default::default(),

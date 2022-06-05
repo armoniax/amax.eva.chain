@@ -19,17 +19,19 @@
 //! Contains code to setup the command invocations in [`super::command`] which would
 //! otherwise bloat that module.
 
-use crate::service::FullClient;
+use std::{sync::Arc, time::Duration};
 
-use amax_eva_runtime as runtime;
-use runtime::SystemCall;
-use sc_cli::Result;
 use sc_client_api::BlockBackend;
-use sp_core::{Encode, Pair};
+use sp_core::{crypto::DEV_PHRASE, ecdsa, Encode, Pair};
 use sp_inherents::{InherentData, InherentDataProvider};
 use sp_runtime::{OpaqueExtrinsic, SaturatedConversion};
 
-use std::{sync::Arc, time::Duration};
+use amax_eva_runtime as runtime;
+
+use crate::{
+    chain_spec::{derive_bip44_pairs_from_mnemonic, get_account_id_from_pair},
+    service::FullClient,
+};
 
 /// Generates extrinsics for the `benchmark overhead` command.
 ///
@@ -46,13 +48,13 @@ impl BenchmarkExtrinsicBuilder {
 }
 
 impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
-    fn remark(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-        let acc = crate::key_helper::benchmark_pair();
+    fn remark(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
+        let acc = derive_bip44_pairs_from_mnemonic::<ecdsa::Public>(DEV_PHRASE, 2);
 
         let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
             self.client.as_ref(),
-            acc,
-            SystemCall::remark { remark: vec![] }.into(),
+            acc[1].clone(),
+            runtime::SystemCall::remark { remark: vec![] }.into(),
             nonce,
         )
         .into();
@@ -66,7 +68,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
 /// Note: Should only be used for benchmarking.
 pub fn create_benchmark_extrinsic(
     client: &FullClient,
-    sender: sp_core::ecdsa::Pair,
+    sender: ecdsa::Pair,
     call: runtime::Call,
     nonce: u32,
 ) -> runtime::UncheckedExtrinsic {
@@ -108,8 +110,7 @@ pub fn create_benchmark_extrinsic(
     );
     let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-    let signed =
-        crate::key_helper::get_account_id_from_pair(sender).expect("must can generate account_id");
+    let signed = get_account_id_from_pair(sender).expect("must can generate account_id");
     runtime::UncheckedExtrinsic::new_signed(
         call,
         signed,
@@ -121,7 +122,7 @@ pub fn create_benchmark_extrinsic(
 /// Generates inherent data for the `benchmark overhead` command.
 ///
 /// Note: Should only be used for benchmarking.
-pub fn inherent_benchmark_data() -> Result<InherentData> {
+pub fn inherent_benchmark_data() -> sc_cli::Result<InherentData> {
     let mut inherent_data = InherentData::new();
     let d = Duration::from_millis(0);
     let timestamp = sp_timestamp::InherentDataProvider::new(d.into());

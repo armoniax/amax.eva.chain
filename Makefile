@@ -1,4 +1,4 @@
-.PHONY: setup check build test fmt-check fmt lint clean
+.PHONY: setup fmt-check fmt clippy dev clean check build test-build release test-release test
 
 setup:
 	bash ./scripts/setup.sh
@@ -25,8 +25,14 @@ check:
 build: fmt
 	cargo build
 
+test-build: fmt
+	cargo build --no-default-features --features manual-seal
+
 release: fmt
 	cargo build --release
+
+test-release: fmt
+	cargo build --release --no-default-features --features manual-seal
 
 test: fmt
 	cargo test --all

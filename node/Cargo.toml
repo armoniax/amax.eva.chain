@@ -12,12 +12,13 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
 name = "amax-eva"
+path = "src/main.rs"
 
 [dependencies]
+async-trait = "0.1"
 clap = { version = "3.1.6", features = ["derive"] }
 futures = "0.3"
 log = "0.4"
-sha3 = "0.10"
 tiny-bip39 = "0.8"
 tiny-hderive = "0.3.0"
 
@@ -31,7 +32,8 @@ sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch 
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", features = ["wasmtime"] }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
-sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
+sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", features = ["wasmtime"] }
 sc-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
@@ -58,8 +60,8 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", 
 pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 # These dependencies are used for runtime benchmarking
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
+frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
 # CLI-specific dependencies
 try-runtime-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
 
@@ -79,8 +81,15 @@ amax-eva-runtime = { path = "../runtime" }
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 
 [features]
-default = []
-runtime-benchmarks = ["amax-eva-runtime/runtime-benchmarks"]
-# Enable features that allow the runtime to be tried and debugged. Name might be subject to change
-# in the near future.
-try-runtime = ["amax-eva-runtime/try-runtime", "try-runtime-cli"]
+default = ["aura"]
+aura = ["sc-consensus-aura"]
+manual-seal = ["sc-consensus-manual-seal"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "frame-benchmarking-cli",
+    "amax-eva-runtime/runtime-benchmarks",
+]
+try-runtime = [
+    "try-runtime-cli",
+    "amax-eva-runtime/try-runtime",
+]
