@@ -16,15 +16,13 @@ dependencies = [
 name = "account"
 version = "0.1.1"
 dependencies = [
- "blake2-rfc",
  "hex",
  "impl-serde",
- "libsecp256k1 0.6.0",
+ "libsecp256k1 0.7.0",
  "log",
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sha3 0.9.1",
  "sp-core",
  "sp-io",
  "sp-runtime",

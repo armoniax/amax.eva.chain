@@ -2,11 +2,10 @@
 
 pub use account::{AccountId20, EthereumSignature, EthereumSigner};
 
-use sp_runtime::traits::BlakeTwo256;
 pub use sp_runtime::OpaqueExtrinsic;
 use sp_runtime::{
     generic,
-    traits::{IdentifyAccount, Verify},
+    traits::{BlakeTwo256, IdentifyAccount, Verify},
 };
 
 pub type Block = generic::Block<Header, OpaqueExtrinsic>;

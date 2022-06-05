@@ -76,9 +76,7 @@ pub fn new_partial(
     ServiceError,
 > {
     if config.keystore_remote.is_some() {
-        return Err(ServiceError::Other(
-            "Remote Keystores are not supported.".into(),
-        ));
+        return Err(ServiceError::Other("Remote Keystores are not supported.".into()))
     }
 
     let telemetry = config
@@ -108,9 +106,7 @@ pub fn new_partial(
     let client = Arc::new(client);
 
     let telemetry = telemetry.map(|(worker, telemetry)| {
-        task_manager
-            .spawn_handle()
-            .spawn("telemetry", None, worker.run());
+        task_manager.spawn_handle().spawn("telemetry", None, worker.run());
         telemetry
     });
 
@@ -221,29 +217,22 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     if let Some(url) = &config.keystore_remote {
         match remote_keystore(url) {
             Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) => {
+            Err(e) =>
                 return Err(ServiceError::Other(format!(
                     "Error hooking up remote keystore for {}: {}",
                     url, e
-                )))
-            }
+                ))),
         };
     }
     let grandpa_protocol_name = sc_finality_grandpa::protocol_standard_name(
-        &client
-            .block_hash(0)
-            .ok()
-            .flatten()
-            .expect("Genesis block exists; qed"),
+        &client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
         &config.chain_spec,
     );
 
     config
         .network
         .extra_sets
-        .push(sc_finality_grandpa::grandpa_peers_set_config(
-            grandpa_protocol_name.clone(),
-        ));
+        .push(sc_finality_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
     let warp_sync = Arc::new(sc_finality_grandpa::warp_proof::NetworkProvider::new(
         backend.clone(),
         grandpa_link.shared_authority_set().clone(),
@@ -321,10 +310,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
                 block_data_cache: block_data_cache.clone(),
             };
 
-            Ok(crate::rpc::create_full(
-                deps,
-                subscription_task_executor.clone(),
-            ))
+            Ok(crate::rpc::create_full(deps, subscription_task_executor.clone()))
         })
     };
 
@@ -405,11 +391,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
     // if the node isn't actively participating in consensus then it doesn't
     // need a keystore, regardless of which protocol we use below.
-    let keystore = if role.is_authority() {
-        Some(keystore_container.sync_keystore())
-    } else {
-        None
-    };
+    let keystore =
+        if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
 
     let grandpa_config = sc_finality_grandpa::Config {
         // FIXME #1578 make this available through chainspec
@@ -466,27 +449,20 @@ pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::P
 }
 
 pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
-    Ok(Arc::new(fc_db::Backend::<Block>::new(
-        &fc_db::DatabaseSettings {
-            source: match config.database {
-                DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
-                    path: frontier_database_dir(config, "db"),
-                    cache_size: 0,
-                },
-                DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
-                    path: frontier_database_dir(config, "paritydb"),
-                },
-                DatabaseSource::Auto { .. } => DatabaseSource::Auto {
-                    rocksdb_path: frontier_database_dir(config, "db"),
-                    paritydb_path: frontier_database_dir(config, "paritydb"),
-                    cache_size: 0,
-                },
-                _ => {
-                    return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string())
-                }
+    Ok(Arc::new(fc_db::Backend::<Block>::new(&fc_db::DatabaseSettings {
+        source: match config.database {
+            DatabaseSource::RocksDb { .. } =>
+                DatabaseSource::RocksDb { path: frontier_database_dir(config, "db"), cache_size: 0 },
+            DatabaseSource::ParityDb { .. } =>
+                DatabaseSource::ParityDb { path: frontier_database_dir(config, "paritydb") },
+            DatabaseSource::Auto { .. } => DatabaseSource::Auto {
+                rocksdb_path: frontier_database_dir(config, "db"),
+                paritydb_path: frontier_database_dir(config, "paritydb"),
+                cache_size: 0,
             },
+            _ => return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string()),
         },
-    )?))
+    })?))
 }
 
 // Spawn frontier tasks.
