@@ -80,7 +80,7 @@ pub fn native_version() -> sp_version::NativeVersion {
 // Configure FRAME pallets to include in runtime.
 
 // ################################################################################################
-// System && Utility stuff.
+// System && Utility.
 // ################################################################################################
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -166,7 +166,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 // ################################################################################################
-// Monetary stuff.
+// Monetary.
 // ################################################################################################
 
 impl pallet_balances::Config for Runtime {
@@ -192,7 +192,7 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 // ################################################################################################
-// Consensus stuff.
+// Consensus.
 // ################################################################################################
 
 impl_opaque_keys! {
@@ -233,7 +233,7 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 // ################################################################################################
-// EVM compatiblity stuff.
+// EVM compatiblity.
 // ################################################################################################
 
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
@@ -303,21 +303,21 @@ construct_runtime!(
         NodeBlock = NodeBlock,
         UncheckedExtrinsic = UncheckedExtrinsic
     {
-        // System && Utility stuff.
+        // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
         // Sudo (temporary).
         Sudo: pallet_sudo = 255,
 
-        // Monetary stuff.
+        // Monetary.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
 
-        // Consensus stuff.
+        // Consensus.
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
 
-        // Evm compatiblity stuff.
+        // Evm compatiblity.
         EVM: pallet_evm = 30,
         Ethereum: pallet_ethereum = 31,
         BaseFee: pallet_base_fee = 32,
