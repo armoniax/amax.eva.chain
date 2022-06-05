@@ -37,10 +37,10 @@ impl Default for Sealing {
     }
 }
 
-#[allow(missing_docs)]
+/// The `run` command used to run a node.
 #[derive(Debug, clap::Parser)]
 pub struct RunCmd {
-    #[allow(missing_docs)]
+    #[doc(hidden)]
     #[clap(flatten)]
     pub base: sc_cli::RunCmd,
 
@@ -49,6 +49,7 @@ pub struct RunCmd {
     #[clap(long, arg_enum, ignore_case = true, default_value_t)]
     pub sealing: Sealing,
 
+    /// Enable dev signer for eth rpc.
     #[clap(long)]
     pub enable_dev_signer: bool,
 
