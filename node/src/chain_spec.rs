@@ -1,10 +1,7 @@
+// Substrate
 use sc_service::{ChainType, Properties};
-
-use amax_eva_runtime::{AccountId, AuraId, GrandpaId, SS58Prefix, WASM_BINARY};
-// genesis config
-use amax_eva_runtime::{
-    AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SudoConfig, SystemConfig,
-};
+// Local
+use amax_eva_runtime::{AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -123,26 +120,31 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
 ) -> GenesisConfig {
+    use amax_eva_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
     GenesisConfig {
+        // System && Utility stuff.
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
+        sudo: SudoConfig {
+            // Assign network admin rights.
+            key: Some(root_key),
+        },
+        // Monetary stuff.
         balances: BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
         },
+        transaction_payment: Default::default(),
+        // Consesnsus stuff.
         aura: AuraConfig {
             authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
         },
         grandpa: GrandpaConfig {
             authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
         },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(root_key),
-        },
-        transaction_payment: Default::default(),
+        // Evm compatibility stuff.
         evm: Default::default(),
         ethereum: Default::default(),
         base_fee: Default::default(),
