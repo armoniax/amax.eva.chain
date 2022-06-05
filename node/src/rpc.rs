@@ -3,12 +3,12 @@
 //! used by Substrate nodes. This file extends those RPC definitions with
 //! capabilities that are specific to this project's runtime configuration.
 
-#![warn(missing_docs)]
 use std::{collections::BTreeMap, sync::Arc};
 
 use jsonrpc_pubsub::manager::SubscriptionManager;
-
+// Substrate
 use sc_client_api::{client::BlockchainEvents, AuxStore, Backend, StateBackend, StorageProvider};
+use sc_network::NetworkService;
 use sc_rpc::SubscriptionTaskExecutor;
 use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool::{ChainApi, Pool};
@@ -17,7 +17,6 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::BlakeTwo256;
-
 // Frontier
 use fc_rpc::{
     EthBlockDataCacheTask, OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override,
@@ -25,8 +24,7 @@ use fc_rpc::{
 };
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
-use sc_network::NetworkService;
-
+// Local
 use amax_eva_runtime::{AccountId, Balance, Hash, Index, NodeBlock as Block, TransactionConverter};
 
 /// Full client dependencies.
@@ -60,14 +58,13 @@ pub struct FullDeps<C, P, A: ChainApi> {
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
 }
+
 pub fn overrides_handle<C, BE>(client: Arc<C>) -> Arc<OverrideHandle<Block>>
 where
     C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + AuxStore,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError>,
     C: Send + Sync + 'static,
-    C::Api: sp_api::ApiExt<Block>
-        + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + fp_rpc::ConvertTransactionRuntimeApi<Block>,
+    C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
 {
@@ -104,22 +101,24 @@ where
     BE::State: StateBackend<BlakeTwo256>,
     C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + AuxStore,
     C: BlockchainEvents<Block>,
-    C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
+    C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError>,
     C: Send + Sync + 'static,
+    C::Api: BlockBuilder<Block>,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-    C::Api: BlockBuilder<Block>,
     C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     A: ChainApi<Block = Block> + 'static,
 {
+    // Substrate
+    use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+    use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    // Frontier
     use fc_rpc::{
         Eth, EthApi, EthDevSigner, EthFilter, EthFilterApi, EthPubSub, EthPubSubApi, EthSigner,
         HexEncodedIdProvider, Net, NetApi, Web3, Web3Api,
     };
-    use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
-    use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {
@@ -179,25 +178,19 @@ where
         )));
     }
 
-    io.extend_with(NetApi::to_delegate(Net::new(
-        client.clone(),
-        network.clone(),
-        // Whether to format the `peer_count` response as Hex (default) or not.
-        true,
-    )));
-
-    io.extend_with(Web3Api::to_delegate(Web3::new(client.clone())));
-
     io.extend_with(EthPubSubApi::to_delegate(EthPubSub::new(
         pool,
-        client,
-        network,
+        client.clone(),
+        network.clone(),
         SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
         overrides,
     )));
+
+    io.extend_with(NetApi::to_delegate(Net::new(client.clone(), network, true)));
+    io.extend_with(Web3Api::to_delegate(Web3::new(client)));
 
     io
 }

@@ -138,7 +138,6 @@ dependencies = [
  "sc-telemetry",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
- "sha3 0.10.1",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
