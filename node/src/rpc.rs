@@ -145,9 +145,7 @@ where
         deny_unsafe,
     )));
 
-    io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(
-        client.clone(),
-    )));
+    io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone())));
 
     let mut signers = Vec::new();
     if enable_dev_signer {

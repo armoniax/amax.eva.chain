@@ -1,5 +1,10 @@
 # An EVM Child Chain (EVA)
 
+[![ga-svg]][ga-url]
+
+[ga-svg]: https://github.com/armoniax/amax.eva.chain/workflows/build/badge.svg
+[ga-url]: https://github.com/armoniax/amax.eva.chain/actions
+
 EVA is the first child chain of Armonia Multichain network and adopts EVM for its smart contract technology.
 
 ## Key properties

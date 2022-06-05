@@ -70,11 +70,7 @@ pub fn create_benchmark_extrinsic(
     call: runtime::Call,
     nonce: u32,
 ) -> runtime::UncheckedExtrinsic {
-    let genesis_hash = client
-        .block_hash(0)
-        .ok()
-        .flatten()
-        .expect("Genesis block exists; qed");
+    let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
     let best_hash = client.chain_info().best_hash;
     let best_block = client.chain_info().best_number;
 

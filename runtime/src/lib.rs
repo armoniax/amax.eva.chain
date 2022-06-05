@@ -50,8 +50,7 @@ pub use frame_support::{
 };
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
-pub use pallet_ethereum::Call as EthereumCall;
-pub use pallet_ethereum::Transaction as EthereumTransaction;
+pub use pallet_ethereum::{Call as EthereumCall, Transaction as EthereumTransaction};
 pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -107,10 +106,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
-    NativeVersion {
-        runtime_version: VERSION,
-        can_author_with: Default::default(),
-    }
+    NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
 }
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -252,10 +248,11 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
     where
         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
     {
-        // TODO change the implementation after bringing in the Session or related pallet to get accountid.
+        // TODO change the implementation after bringing in the Session or related pallet to get
+        // accountid.
         if let Some(author_index) = F::find_author(digests) {
             let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
+            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
         }
         None
     }
@@ -481,9 +478,9 @@ impl fp_self_contained::SelfContainedCall for Call {
         info: Self::SignedInfo,
     ) -> Option<sp_runtime::DispatchResultWithInfo<PostDispatchInfoOf<Self>>> {
         match self {
-            call @ Call::Ethereum(pallet_ethereum::Call::transact { .. }) => Some(call.dispatch(
-                Origin::from(pallet_ethereum::RawOrigin::EthereumTransaction(info)),
-            )),
+            call @ Call::Ethereum(pallet_ethereum::Call::transact { .. }) => Some(
+                call.dispatch(Origin::from(pallet_ethereum::RawOrigin::EthereumTransaction(info))),
+            ),
             _ => None,
         }
     }

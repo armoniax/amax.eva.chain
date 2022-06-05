@@ -2,63 +2,55 @@
 # notice the name must be `account` for this crate, for the `scale-info` just parses the type based on the crate name.
 # While in `polkadot.js`, just parses str `account::AccountId20` to support ethereum type.
 name = "account"
-authors = ["PureStake"]
-edition = "2018"
-homepage = "https://moonbeam.network"
-license = "GPL-3.0-only"
-repository = "https://github.com/PureStake/moonbeam/"
 version = "0.1.1"
-publish = false
+edition = "2021"
+authors = ["PureStake", "Armonia Authors"]
+license = "GPL-3.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-blake2-rfc = { version = "0.2.18", optional = true, default-features = false }
-hex = { version = "0.4", default-features = false }
-impl-serde = { version = "0.3.1", default-features = false }
-libsecp256k1 = { version = "0.6", default-features = false, features = [
-  "hmac",
-] }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
 log = "0.4"
-serde = { version = "1.0.101", optional = true, default-features = false, features = [
-  "derive",
-] }
-sha3 = { version = "0.9", default-features = false }
+serde = { version = "1.0", default-features = false, features = [
+    "derive",
+], optional = true }
 
-# Substrate
-parity-scale-codec = { version = "3.0.0", default-features = false, features = [
-  "derive",
+# Parity
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
+    "derive",
+] }
+impl-serde = { version = "0.3.2", default-features = false }
+libsecp256k1 = { version = "0.7", default-features = false, features = [
+    "hmac",
 ] }
 scale-info = { version = "2.0", default-features = false, features = [
-  "derive",
+    "derive",
 ] }
+
+# Substrate
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-runtime-interface = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 
-[dev-dependencies]
-hex = "0.4.3"
-
 [features]
 default = ["std"]
 std = [
-  "full_crypto",
-  "hex/std",
-  "impl-serde/std",
-  "libsecp256k1/std",
-  "parity-scale-codec/std",
-  "serde/std",
-  "sha3/std",
-  "sp-core/std",
-  "sp-io/std",
-  "sp-runtime/std",
-  "sp-std/std",
+    "full_crypto",
+    "hex/std",
+    "serde/std",
+    # Parity    
+    "codec/std",
+    "impl-serde/std",
+    "libsecp256k1/std",
+    "scale-info/std",
+    # Substrate
+    "sp-core/std",
+    "sp-io/std",
+    "sp-runtime/std",
+    "sp-std/std",
 ]
-
-full_crypto = [
-  "blake2-rfc",
-  "sp-runtime-interface/disable_target_static_assertions",
-]
+full_crypto = ["sp-runtime-interface/disable_target_static_assertions"]

@@ -1,7 +1,7 @@
 .PHONY: setup check build test fmt-check fmt lint clean
 
 setup:
-	bash ./scripts/setup/dev_setup.sh
+	bash ./scripts/setup.sh
 
 fmt-check:
 	taplo fmt --check
@@ -30,9 +30,3 @@ release: fmt
 
 test: fmt
 	cargo test --all
-
-test-build: fmt
-	cargo build --release --no-default-features --features manual-seal,evm-debug,evm-tracing
-
-tracing-build: fmt
-	cargo build --release --features evm-tracing

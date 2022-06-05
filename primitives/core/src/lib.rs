@@ -1,36 +1,40 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// re-exports
 pub use account::{AccountId20, EthereumSignature, EthereumSigner};
 
-use sp_runtime::traits::BlakeTwo256;
-pub use sp_runtime::OpaqueExtrinsic;
 use sp_runtime::{
     generic,
-    traits::{IdentifyAccount, Verify},
+    traits::{BlakeTwo256, IdentifyAccount, Verify},
 };
 
-pub type Block = generic::Block<Header, OpaqueExtrinsic>;
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = EthereumSignature;
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-/// AssetId type
-pub type AssetId = u128;
-/// Balance of an account.
-pub type Balance = u128;
 /// An index to a block.
 pub type BlockNumber = u32;
+
+/// An instant or duration in time.
+pub type Moment = u64;
+
+/// Balance of an account.
+pub type Balance = u128;
+
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
-/// Block header type as expected by this runtime.
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+
 /// Index of a transaction in the chain.
 pub type Index = u32;
+
+/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
+pub type Signature = EthereumSignature;
+pub type AccountPublic = <Signature as Verify>::Signer;
+/// Some way of identifying an account on the chain. We intentionally make it equivalent
+/// to the public key of our transaction signing scheme.
+pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 /// The address format for describing accounts.
 pub type Address = AccountId;
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
-pub type AccountIndex = u32;
-/// Digest item type.
-pub type DigestItem = generic::DigestItem;
+
+/// Block header type as expected by this runtime.
+pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+/// Block opaque extrinsic type as expected by this runtime.
+pub use sp_runtime::OpaqueExtrinsic;
+/// Block type as expected by this runtime.
+pub type Block = generic::Block<Header, OpaqueExtrinsic>;

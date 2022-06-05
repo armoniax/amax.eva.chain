@@ -63,9 +63,9 @@ impl DefaultConfigurationValues for Cli {
     }
 }
 
-/// A copy implementation for RunCmd, but the generic type `DCV` in `CliConfiguration<DCV>` is `Cli`.
-/// Notice this implementation should be updated if the `CliConfiguration` implementation for `RunCmd`
-/// has changed.
+/// A copy implementation for RunCmd, but the generic type `DCV` in `CliConfiguration<DCV>` is
+/// `Cli`. Notice this implementation should be updated if the `CliConfiguration` implementation for
+/// `RunCmd` has changed.
 /// More exactly, the function which should be implemented for `Cli` is the one that be called in
 /// `create_configuration` function, while it's also overridden by `RunCmd`.
 /// Thus, the easiest way is to override all functions which are overridden for `RunCmd`.
@@ -175,12 +175,7 @@ impl Cli {
             tokio_runtime.handle().clone(),
         )?;
 
-        command.init(
-            &Self::support_url(),
-            &Self::impl_version(),
-            |_, _| {},
-            &config,
-        )?;
+        command.init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
         Runner::new(config, tokio_runtime)
     }
 }
