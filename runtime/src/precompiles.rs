@@ -1,25 +1,28 @@
-use pallet_evm::{Context, Precompile, PrecompileResult, PrecompileSet};
+// Substrate
 use sp_core::H160;
 use sp_std::marker::PhantomData;
-
+// Frontier
+use pallet_evm::{Context, Precompile, PrecompileResult, PrecompileSet};
 use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 
+#[derive(Default)]
 pub struct FrontierPrecompiles<R>(PhantomData<R>);
 
 impl<R> FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
 {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self(Default::default())
     }
+
     pub fn used_addresses() -> sp_std::vec::Vec<H160> {
         sp_std::vec![1, 2, 3, 4, 5, 1024, 1025].into_iter().map(hash).collect()
     }
 }
+
 impl<R> PrecompileSet for FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
