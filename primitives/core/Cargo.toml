@@ -2,7 +2,7 @@
 name = "primitives-core"
 version = "0.1.0"
 edition = "2021"
-authors = ["Armoniax Authors"]
+authors = ["Armonia Authors"]
 license = "GPL-3.0"
 
 [package.metadata.docs.rs]

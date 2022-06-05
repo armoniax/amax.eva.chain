@@ -2,7 +2,7 @@
 name = "amax-eva"
 version = "0.1.0"
 edition = "2021"
-authors = ["Armoniax Authors"]
+authors = ["Armonia Authors"]
 license = "GPL-3.0"
 description = "armonia multichain - eva child chain"
 build = "build.rs"

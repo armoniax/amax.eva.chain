@@ -4,7 +4,7 @@
 name = "account"
 version = "0.1.1"
 edition = "2021"
-authors = ["PureStake", "Armoniax Authors"]
+authors = ["PureStake", "Armonia Authors"]
 license = "GPL-3.0"
 
 [package.metadata.docs.rs]
