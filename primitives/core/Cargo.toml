@@ -19,9 +19,9 @@ account = { path = "./account", default-features = false }
 [features]
 default = ["std"]
 std = [
-  # Substrate
-  "sp-core/std",
-  "sp-runtime/std",
-  # Local
-  "account/std",
+    # Substrate
+    "sp-core/std",
+    "sp-runtime/std",
+    # Local
+    "account/std",
 ]
