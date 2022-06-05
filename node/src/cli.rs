@@ -24,9 +24,9 @@ pub struct Cli {
 #[cfg(feature = "manual-seal")]
 #[derive(Debug, Copy, Clone, clap::ArgEnum)]
 pub enum Sealing {
-    // Seal using rpc method.
+    /// Seal using rpc method.
     Manual,
-    // Seal when transaction is executed.
+    /// Seal when transaction is executed.
     Instant,
 }
 
@@ -268,7 +268,9 @@ impl Cli {
             tokio_runtime.handle().clone(),
         )?;
 
-        command.base.init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
+        command
+            .base
+            .init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
         Runner::new(config, tokio_runtime)
     }
 }

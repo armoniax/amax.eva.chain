@@ -8,6 +8,8 @@ mod cli;
 mod command;
 #[cfg(feature = "runtime-benchmarks")]
 mod command_helper;
+#[cfg(feature = "manual-seal")]
+mod manual_seal;
 mod rpc;
 mod service;
 

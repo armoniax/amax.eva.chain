@@ -25,8 +25,14 @@ check:
 build: fmt
 	cargo build
 
+test-build: fmt
+	cargo build --no-default-features --features manual-seal
+
 release: fmt
 	cargo build --release
+
+test-release: fmt
+	cargo build --release --no-default-features --features manual-seal
 
 test: fmt
 	cargo test --all

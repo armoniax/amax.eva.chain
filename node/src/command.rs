@@ -68,14 +68,16 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
-                let PartialComponents { client, task_manager, .. } = service::new_partial(&config, &cli)?;
+                let PartialComponents { client, task_manager, .. } =
+                    service::new_partial(&config, &cli)?;
                 Ok((cmd.run(client, config.database), task_manager))
             })
         },
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
-                let PartialComponents { client, task_manager, .. } = service::new_partial(&config, &cli)?;
+                let PartialComponents { client, task_manager, .. } =
+                    service::new_partial(&config, &cli)?;
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         },

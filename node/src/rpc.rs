@@ -57,6 +57,10 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub overrides: Arc<OverrideHandle<Block>>,
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
+    /// Manual seal command sink
+    #[cfg(feature = "manual-seal")]
+    pub command_sink:
+        Option<futures::channel::mpsc::Sender<sc_consensus_manual_seal::rpc::EngineCommand<Hash>>>,
 }
 
 pub fn overrides_handle<C, BE>(client: Arc<C>) -> Arc<OverrideHandle<Block>>
@@ -113,6 +117,8 @@ where
 {
     // Substrate
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+    #[cfg(feature = "manual-seal")]
+    use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApi};
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
     // Frontier
     use fc_rpc::{
@@ -136,6 +142,8 @@ where
         fee_history_cache_limit,
         overrides,
         block_data_cache,
+        #[cfg(feature = "manual-seal")]
+        command_sink,
     } = deps;
 
     io.extend_with(SystemApi::to_delegate(FullSystem::new(
@@ -191,6 +199,15 @@ where
 
     io.extend_with(NetApi::to_delegate(Net::new(client.clone(), network, true)));
     io.extend_with(Web3Api::to_delegate(Web3::new(client)));
+
+    #[cfg(feature = "manual-seal")]
+    if let Some(command_sink) = command_sink {
+        io.extend_with(
+            // We provide the rpc handler with the sending end of the channel to allow the rpc
+            // send EngineCommands to the background block authorship task.
+            ManualSealApi::to_delegate(ManualSeal::new(command_sink)),
+        );
+    }
 
     io
 }

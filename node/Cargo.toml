@@ -15,6 +15,7 @@ name = "amax-eva"
 path = "src/main.rs"
 
 [dependencies]
+async-trait = "0.1"
 clap = { version = "3.1.6", features = ["derive"] }
 futures = "0.3"
 log = "0.4"
@@ -31,7 +32,8 @@ sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch 
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", features = ["wasmtime"] }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
-sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
+sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", optional = true }
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", features = ["wasmtime"] }
 sc-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
@@ -79,8 +81,9 @@ amax-eva-runtime = { path = "../runtime" }
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
 
 [features]
-default = []
-manual-seal = []
+default = ["aura"]
+aura = ["sc-consensus-aura"]
+manual-seal = ["sc-consensus-manual-seal"]
 runtime-benchmarks = [
     "frame-benchmarking",
     "frame-benchmarking-cli",
