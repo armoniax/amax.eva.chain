@@ -1,4 +1,4 @@
-.PHONY: setup check build test fmt-check fmt lint clean
+.PHONY: setup fmt-check fmt clippy dev clean check build test-build release test-release test
 
 setup:
 	bash ./scripts/setup.sh

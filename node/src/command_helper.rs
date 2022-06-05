@@ -28,7 +28,10 @@ use sp_runtime::{OpaqueExtrinsic, SaturatedConversion};
 
 use amax_eva_runtime as runtime;
 
-use crate::service::FullClient;
+use crate::{
+    chain_spec::{derive_bip44_pairs_from_mnemonic, get_account_id_from_pair},
+    service::FullClient,
+};
 
 /// Generates extrinsics for the `benchmark overhead` command.
 ///
@@ -50,7 +53,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
 
         let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
             self.client.as_ref(),
-            acc,
+            acc[1].clone(),
             runtime::SystemCall::remark { remark: vec![] }.into(),
             nonce,
         )
@@ -107,8 +110,7 @@ pub fn create_benchmark_extrinsic(
     );
     let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-    let signed =
-        crate::key_helper::get_account_id_from_pair(sender).expect("must can generate account_id");
+    let signed = get_account_id_from_pair(sender).expect("must can generate account_id");
     runtime::UncheckedExtrinsic::new_signed(
         call,
         signed,

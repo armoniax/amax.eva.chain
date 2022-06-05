@@ -46,7 +46,7 @@ pub struct RunCmd {
 
     /// Choose sealing method.
     #[cfg(feature = "manual-seal")]
-    #[clap(long, arg_enum, ignore_case = true)]
+    #[clap(long, arg_enum, ignore_case = true, default_value_t)]
     pub sealing: Sealing,
 
     #[clap(long)]

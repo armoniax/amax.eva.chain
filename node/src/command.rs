@@ -128,7 +128,8 @@ pub fn run() -> sc_cli::Result<()> {
 
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let PartialComponents { client, backend, .. } = service::new_partial(&config)?;
+                let PartialComponents { client, backend, .. } =
+                    service::new_partial(&config, &cli)?;
 
                 // This switch needs to be in the client, since the client decides
                 // which sub-commands it wants to support.
