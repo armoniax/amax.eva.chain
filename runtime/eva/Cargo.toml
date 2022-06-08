@@ -1,5 +1,5 @@
 [package]
-name = "amax-eva-runtime"
+name = "eva-runtime"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
@@ -58,7 +58,7 @@ pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier",
 pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
 
 # Local
-primitives-core = { path = "../primitives/core", default-features = false }
+primitives-core = { path = "../../primitives/core", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }

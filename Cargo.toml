@@ -1,10 +1,11 @@
 [workspace]
 members = [
-    # Node
-    "node",
+    #    # Node
+    #    "node",
 
     # Runtime
-    "runtime",
+    "runtime/eva",
+    "runtime/wall-e",
 
     # Primitives
     "primitives/core",
