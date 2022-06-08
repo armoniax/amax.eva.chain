@@ -75,7 +75,9 @@ fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-
 fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19" }
 
 # Local
-amax-eva-runtime = { path = "../runtime" }
+runtime-common = { path = "../runtime/common" }
+eva-runtime = { path = "../runtime/eva" }
+wall-e-runtime = { path = "../runtime/wall-e" }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
@@ -87,9 +89,11 @@ manual-seal = ["sc-consensus-manual-seal"]
 runtime-benchmarks = [
     "frame-benchmarking",
     "frame-benchmarking-cli",
-    "amax-eva-runtime/runtime-benchmarks",
+    "eva-runtime/runtime-benchmarks",
+    "wall-e-runtime/runtime-benchmarks",
 ]
 try-runtime = [
     "try-runtime-cli",
-    "amax-eva-runtime/try-runtime",
+    "eva-runtime/try-runtime",
+    "wall-e-runtime/try-runtime",
 ]

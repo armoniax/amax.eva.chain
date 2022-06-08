@@ -584,7 +584,7 @@ impl_runtime_apis! {
             // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
             // right here and right now.
             let weight = Executive::try_runtime_upgrade().unwrap();
-            (weight, BlockWeights::get().max_block)
+            (weight, system::BlockWeights::get().max_block)
         }
 
         fn execute_block_no_check(block: Block) -> frame_support::weights::Weight {
