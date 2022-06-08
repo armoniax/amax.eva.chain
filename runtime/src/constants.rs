@@ -1,8 +1,5 @@
 //! A set of constant values used in substrate runtime.
 
-/// Currency constants.
-pub mod currency {}
-
 /// Time constants.
 pub mod time {
     use primitives_core::{BlockNumber, Moment};
@@ -25,3 +22,6 @@ pub mod time {
     pub const HOURS: BlockNumber = MINUTES * 60;
     pub const DAYS: BlockNumber = HOURS * 24;
 }
+
+/// Currency constants.
+pub mod currency {}
