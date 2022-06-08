@@ -1,6 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use std::{
     collections::BTreeMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -15,7 +16,7 @@ use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskMana
 use sc_telemetry::{Telemetry, TelemetryWorker};
 // Frontier
 use fc_consensus::FrontierBlockImport;
-use fc_db::DatabaseSource;
+use fc_db::Backend as FrontierBackend;
 use fc_mapping_sync::{MappingSyncWorker, SyncStrategy};
 use fc_rpc::{EthTask, OverrideHandle};
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
@@ -129,7 +130,8 @@ pub fn new_partial(
     );
 
     // Frontier
-    let frontier_backend = open_frontier_backend(config)?;
+    let frontier_backend =
+        Arc::new(FrontierBackend::open(&config.database, &db_config_dir(config))?);
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
     let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
     let fee_history_cache_limit: FeeHistoryCacheLimit = cli.run.fee_history_limit;
@@ -649,35 +651,15 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
     Ok(task_manager)
 }
 
-pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
-    let config_dir = config
+pub(crate) fn db_config_dir(config: &Configuration) -> PathBuf {
+    config
         .base_path
         .as_ref()
         .map(|base_path| base_path.config_dir(config.chain_spec.id()))
         .unwrap_or_else(|| {
-            BasePath::from_project("", "", &crate::cli::Cli::executable_name())
+            BasePath::from_project("", "", &Cli::executable_name())
                 .config_dir(config.chain_spec.id())
-        });
-    config_dir.join("frontier").join(path)
-}
-
-pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
-    Ok(Arc::new(fc_db::Backend::<Block>::new(&fc_db::DatabaseSettings {
-        source: match config.database {
-            DatabaseSource::RocksDb { .. } => {
-                DatabaseSource::RocksDb { path: frontier_database_dir(config, "db"), cache_size: 0 }
-            },
-            DatabaseSource::ParityDb { .. } => {
-                DatabaseSource::ParityDb { path: frontier_database_dir(config, "paritydb") }
-            },
-            DatabaseSource::Auto { .. } => DatabaseSource::Auto {
-                rocksdb_path: frontier_database_dir(config, "db"),
-                paritydb_path: frontier_database_dir(config, "paritydb"),
-                cache_size: 0,
-            },
-            _ => return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string()),
-        },
-    })?))
+        })
 }
 
 // Spawn frontier tasks.

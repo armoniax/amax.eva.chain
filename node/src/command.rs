@@ -1,10 +1,13 @@
+// Substrate
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::{DatabaseSource, PartialComponents};
+// Frontier
+use fc_db::frontier_database_dir;
 
 use crate::{
     chain_spec,
     cli::{Cli, Subcommand},
-    service::{self, frontier_database_dir},
+    service::{self, db_config_dir},
 };
 
 impl SubstrateCli for Cli {
@@ -93,13 +96,14 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 // Remove Frontier offchain db
+                let db_config_dir = db_config_dir(&config);
                 let frontier_database_config = match config.database {
                     DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
-                        path: frontier_database_dir(&config, "db"),
+                        path: frontier_database_dir(&db_config_dir, "db"),
                         cache_size: 0,
                     },
                     DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
-                        path: frontier_database_dir(&config, "paritydb"),
+                        path: frontier_database_dir(&db_config_dir, "paritydb"),
                     },
                     _ => {
                         return Err(format!("Cannot purge `{:?}` database", config.database).into())
