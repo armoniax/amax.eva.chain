@@ -75,6 +75,7 @@ fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 
 # Local
 runtime-common = { path = "../runtime/common" }
+
 eva-runtime = { path = "../runtime/eva" }
 wall-e-runtime = { path = "../runtime/wall-e" }
 
