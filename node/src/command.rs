@@ -101,8 +101,9 @@ pub fn run() -> sc_cli::Result<()> {
                     DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
                         path: frontier_database_dir(&config, "paritydb"),
                     },
-                    _ =>
-                        return Err(format!("Cannot purge `{:?}` database", config.database).into()),
+                    _ => {
+                        return Err(format!("Cannot purge `{:?}` database", config.database).into())
+                    },
                 };
                 cmd.run(frontier_database_config)?;
                 cmd.run(config.database)
@@ -123,7 +124,7 @@ pub fn run() -> sc_cli::Result<()> {
         #[cfg(feature = "runtime-benchmarks")]
         Some(Subcommand::Benchmark(cmd)) => {
             use crate::command_helper::{inherent_benchmark_data, BenchmarkExtrinsicBuilder};
-            use frame_benchmarking_cli::BenchmarkCmd;
+            use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
             use std::sync::Arc;
 
             let runner = cli.create_runner(cmd)?;
@@ -134,8 +135,9 @@ pub fn run() -> sc_cli::Result<()> {
                 // This switch needs to be in the client, since the client decides
                 // which sub-commands it wants to support.
                 match cmd {
-                    BenchmarkCmd::Pallet(cmd) =>
-                        cmd.run::<amax_eva_runtime::Block, service::ExecutorDispatch>(config),
+                    BenchmarkCmd::Pallet(cmd) => {
+                        cmd.run::<amax_eva_runtime::Block, service::ExecutorDispatch>(config)
+                    },
                     BenchmarkCmd::Block(cmd) => cmd.run(client),
                     BenchmarkCmd::Storage(cmd) => {
                         let db = backend.expose_db();
@@ -145,6 +147,9 @@ pub fn run() -> sc_cli::Result<()> {
                     BenchmarkCmd::Overhead(cmd) => {
                         let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
                         cmd.run(config, client, inherent_benchmark_data()?, Arc::new(ext_builder))
+                    },
+                    BenchmarkCmd::Machine(cmd) => {
+                        cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone())
                     },
                 }
             })

@@ -262,11 +262,12 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
     if let Some(url) = &config.keystore_remote {
         match remote_keystore(url) {
             Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) =>
+            Err(e) => {
                 return Err(ServiceError::Other(format!(
                     "Error hooking up remote keystore for {}: {}",
                     url, e
-                ))),
+                )))
+            },
         };
     }
 
@@ -494,11 +495,12 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
     if let Some(url) = &config.keystore_remote {
         match remote_keystore(url) {
             Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) =>
+            Err(e) => {
                 return Err(ServiceError::Other(format!(
                     "Error hooking up remote keystore for {}: {}",
                     url, e
-                ))),
+                )))
+            },
         };
     }
 
@@ -662,10 +664,12 @@ pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::P
 pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
     Ok(Arc::new(fc_db::Backend::<Block>::new(&fc_db::DatabaseSettings {
         source: match config.database {
-            DatabaseSource::RocksDb { .. } =>
-                DatabaseSource::RocksDb { path: frontier_database_dir(config, "db"), cache_size: 0 },
-            DatabaseSource::ParityDb { .. } =>
-                DatabaseSource::ParityDb { path: frontier_database_dir(config, "paritydb") },
+            DatabaseSource::RocksDb { .. } => {
+                DatabaseSource::RocksDb { path: frontier_database_dir(config, "db"), cache_size: 0 }
+            },
+            DatabaseSource::ParityDb { .. } => {
+                DatabaseSource::ParityDb { path: frontier_database_dir(config, "paritydb") }
+            },
             DatabaseSource::Auto { .. } => DatabaseSource::Auto {
                 rocksdb_path: frontier_database_dir(config, "db"),
                 paritydb_path: frontier_database_dir(config, "paritydb"),
