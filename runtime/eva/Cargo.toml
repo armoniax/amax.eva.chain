@@ -60,6 +60,8 @@ pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", b
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
 
+runtime-common = { path = "../common", default-features = false }
+
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19", default-features = false }
 
@@ -108,6 +110,8 @@ std = [
     "pallet-evm-precompile-sha3fips/std",
     # Local
     "primitives-core/std",
+
+    "runtime-common/std",
 ]
 runtime-benchmarks = [
     "hex-literal",

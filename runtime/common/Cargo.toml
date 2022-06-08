@@ -1,8 +1,12 @@
 [package]
-name = "well-e-runtime"
+name = "runtime-common"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
 license = "GPL-3.0"
 
 [dependencies]
+
+[features]
+default = ["std"]
+std = []

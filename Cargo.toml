@@ -4,6 +4,7 @@ members = [
     #    "node",
 
     # Runtime
+    "runtime/common",
     "runtime/eva",
     "runtime/wall-e",
 
