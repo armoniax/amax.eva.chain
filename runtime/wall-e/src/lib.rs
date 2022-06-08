@@ -19,7 +19,7 @@ use sp_runtime::{
         BlakeTwo256, Block as BlockT, Dispatchable, IdentityLookup, NumberFor, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, ConsensusEngineId,  Permill,
+    ApplyExtrinsicResult, ConsensusEngineId, Permill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -27,10 +27,7 @@ use sp_version::RuntimeVersion;
 use frame_support::{
     construct_runtime, parameter_types,
     traits::{FindAuthor, KeyOwnerProofSystem},
-    weights::{
-        constants::{RocksDbWeight, },
-        IdentityFee,
-    },
+    weights::{constants::RocksDbWeight, IdentityFee},
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
@@ -200,7 +197,7 @@ impl pallet_grandpa::Config for Runtime {
     type Call = Call;
 
     type KeyOwnerProof =
-    <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+        <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
     type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
         KeyTypeId,
@@ -222,8 +219,8 @@ impl pallet_grandpa::Config for Runtime {
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
 impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
     fn find_author<'a, I>(digests: I) -> Option<H160>
-        where
-            I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+    where
+        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
     {
         // TODO change the implementation after bringing in the Session or related pallet to get
         // accountid.
@@ -300,7 +297,7 @@ construct_runtime!(
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-fp_self_contained::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+    fp_self_contained::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = fp_self_contained::CheckedExtrinsic<AccountId, Call, SignedExtra, H160>;
 /// Block type as expected by this runtime.
@@ -328,7 +325,7 @@ pub type Executive = frame_executive::Executive<
 >;
 
 pub type TransactionConverter =
-runtime_common::ethereum::EthTransactionConverter<UncheckedExtrinsic, Runtime>;
+    runtime_common::ethereum::EthTransactionConverter<UncheckedExtrinsic, Runtime>;
 // frontier interface for runtime-api
 impl fp_self_contained::SelfContainedCall for Call {
     type SignedInfo = H160;

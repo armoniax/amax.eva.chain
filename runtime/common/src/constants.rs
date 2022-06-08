@@ -1,6 +1,6 @@
 //! A set of constant values used in substrate runtime.
 
-use frame_support::{weights::constants::WEIGHT_PER_SECOND, parameter_types, traits::ConstU32};
+use frame_support::{parameter_types, traits::ConstU32, weights::constants::WEIGHT_PER_SECOND};
 use sp_core::U256;
 use sp_runtime::Perbill;
 

@@ -27,10 +27,7 @@ use sp_version::RuntimeVersion;
 use frame_support::{
     construct_runtime, parameter_types,
     traits::{FindAuthor, KeyOwnerProofSystem},
-    weights::{
-        constants::{RocksDbWeight, },
-        IdentityFee,
-    },
+    weights::{constants::RocksDbWeight, IdentityFee},
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
