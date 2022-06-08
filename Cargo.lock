@@ -599,9 +599,6 @@ dependencies = [
  "pallet-base-fee",
  "pallet-ethereum",
  "pallet-evm",
- "pallet-evm-precompile-modexp",
- "pallet-evm-precompile-sha3fips",
- "pallet-evm-precompile-simple",
  "pallet-grandpa",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2346,6 +2343,22 @@ dependencies = [
 [[package]]
 name = "runtime-common"
 version = "0.1.0"
+dependencies = [
+ "fp-rpc",
+ "frame-support",
+ "frame-system",
+ "pallet-base-fee",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-precompile-modexp",
+ "pallet-evm-precompile-sha3fips",
+ "pallet-evm-precompile-simple",
+ "parity-scale-codec",
+ "primitives-core",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "rustc-demangle"

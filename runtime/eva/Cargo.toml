@@ -53,9 +53,6 @@ fp-self-contained = { git = "https://github.com/armoniax/frontier", branch = "ev
 pallet-base-fee = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
 pallet-ethereum = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
 pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
-pallet-evm-precompile-modexp = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
-pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
-pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.19", default-features = false }
 
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
@@ -105,9 +102,6 @@ std = [
     "pallet-base-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
-    "pallet-evm-precompile-modexp/std",
-    "pallet-evm-precompile-simple/std",
-    "pallet-evm-precompile-sha3fips/std",
     # Local
     "primitives-core/std",
 

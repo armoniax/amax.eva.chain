@@ -7,7 +7,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode};
 // Substrate
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -27,7 +26,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem},
+    traits::{FindAuthor, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_PER_SECOND},
         IdentityFee,
@@ -47,15 +46,14 @@ pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
 pub use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
-    OpaqueExtrinsic, Signature,
+    Signature,
 };
 
-pub mod constants;
-use self::constants::time::*;
-mod evm_config;
-use self::evm_config::*;
-mod precompiles;
-use self::precompiles::FrontierPrecompiles;
+use runtime_common::{
+    constants::{balances, consensus, ethereum as eth_const, system, time},
+    evm_config,
+    precompiles::FrontierPrecompiles,
+};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -145,18 +143,14 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
     /// The set code logic, just the default since we're not a parachain.
     type OnSetCode = ();
-    type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-parameter_types! {
-    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
+    type MaxConsumers = system::MaxConsumers;
 }
 
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
     type OnTimestampSet = Aura;
-    type MinimumPeriod = MinimumPeriod;
+    type MinimumPeriod = time::MinimumPeriod;
     type WeightInfo = ();
 }
 
@@ -175,17 +169,18 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     /// The ubiquitous event type.
     type Event = Event;
-    type ExistentialDeposit = ConstU128<0>; // do not kill accounts when balances low.
+    type ExistentialDeposit = balances::ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-    type MaxLocks = ConstU32<50>;
+    type MaxLocks = balances::MaxLocks;
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-    type OperationalFeeMultiplier = ConstU8<5>;
+    // TODO. need to check this value.
+    type OperationalFeeMultiplier = balances::OperationalFeeMultiplier;
     type WeightToFee = IdentityFee<Balance>;
     type LengthToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ();
@@ -202,13 +197,9 @@ impl_opaque_keys! {
     }
 }
 
-parameter_types! {
-    pub const MaxAuthorities: u32 = 32;
-}
-
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
-    type MaxAuthorities = MaxAuthorities;
+    type MaxAuthorities = consensus::MaxAuthorities;
     type DisabledValidators = ();
 }
 
@@ -229,7 +220,7 @@ impl pallet_grandpa::Config for Runtime {
     type HandleEquivocation = ();
 
     type WeightInfo = ();
-    type MaxAuthorities = MaxAuthorities;
+    type MaxAuthorities = consensus::MaxAuthorities;
 }
 
 // ################################################################################################
@@ -255,25 +246,23 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 parameter_types! {
     // TODO need to set chainid(for testnet version we will set 161)
     pub const ChainId: u64 = 160;
-    // TODO need to check gaslimt with team
-    pub BlockGasLimit: U256 = U256::from(u32::max_value());
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
 }
 
 impl pallet_evm::Config for Runtime {
-    type FeeCalculator = FixedGasPrice;
-    type GasWeightMapping = GasWeightMapping;
+    type FeeCalculator = evm_config::FixedGasPrice;
+    type GasWeightMapping = evm_config::GasWeightMapping;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
-    type AddressMapping = IntoAddressMapping;
+    type AddressMapping = evm_config::IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
-    type BlockGasLimit = BlockGasLimit;
+    type BlockGasLimit = eth_const::BlockGasLimit;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
 }
@@ -283,17 +272,11 @@ impl pallet_ethereum::Config for Runtime {
     type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
 }
 
-parameter_types! {
-    pub IsActive: bool = true;
-    // TODO need to check this with team
-    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-}
-
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
-    type Threshold = BaseFeeThreshold;
-    type IsActive = IsActive;
-    type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
+    type Threshold = evm_config::BaseFeeThreshold;
+    type IsActive = eth_const::IsActive;
+    type DefaultBaseFeePerGas = eth_const::DefaultBaseFeePerGas;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -353,24 +336,8 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
-pub struct TransactionConverter;
-impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-    fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-        UncheckedExtrinsic::new_unsigned(
-            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-        )
-    }
-}
-impl fp_rpc::ConvertTransaction<OpaqueExtrinsic> for TransactionConverter {
-    fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> OpaqueExtrinsic {
-        let extrinsic = UncheckedExtrinsic::new_unsigned(
-            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-        );
-        let encoded = extrinsic.encode();
-        OpaqueExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
-    }
-}
-
+pub type TransactionConverter =
+    runtime_common::ethereum::EthTransactionConverter<UncheckedExtrinsic, Runtime>;
 // frontier interface for runtime-api
 impl fp_self_contained::SelfContainedCall for Call {
     type SignedInfo = H160;

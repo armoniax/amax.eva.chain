@@ -1,6 +1,6 @@
 // Substrate
 use sp_core::H160;
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 // Frontier
 use pallet_evm::{Context, Precompile, PrecompileResult, PrecompileSet};
 use pallet_evm_precompile_modexp::Modexp;
@@ -18,7 +18,7 @@ where
         Self(Default::default())
     }
 
-    pub fn used_addresses() -> sp_std::vec::Vec<H160> {
+    pub fn used_addresses() -> Vec<H160> {
         sp_std::vec![1, 2, 3, 4, 5, 1024, 1025].into_iter().map(hash).collect()
     }
 }
