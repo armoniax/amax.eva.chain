@@ -1,9 +1,11 @@
 // Substrate
 use sc_service::{ChainType, Properties};
 // Local
-use amax_eva_runtime::{AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
+use wall_e_runtime::GenesisConfig;
 
-use crate::chain_spec::{authority_keys_from_seed, generate_dev_accounts};
+use wall_e_runtime::{AccountId, AuraId, GrandpaId, SS58Prefix, WASM_BINARY};
+
+use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -26,12 +28,12 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Development",
+        "Wall-e Development",
         // ID
-        "dev",
+        "wall_e_dev",
         ChainType::Development,
         move || {
-            testnet_genesis(
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice")],
@@ -70,12 +72,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        "Wall-e Local Testnet",
         // ID
-        "local_testnet",
+        "wall_e_local_testnet",
         ChainType::Local,
         move || {
-            testnet_genesis(
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
@@ -112,7 +114,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 }
 
 /// Configure initial storage state for FRAME modules.
-fn testnet_genesis(
+fn genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(AuraId, GrandpaId)>,
     root_key: AccountId,
@@ -132,8 +134,8 @@ fn testnet_genesis(
         },
         // Monetary.
         balances: BalancesConfig {
-            // Configure endowed accounts with initial balance of 1 << 60.
-            balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+            // Configure endowed accounts with initial balance of 1 << 80.
+            balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 80)).collect(),
         },
         transaction_payment: Default::default(),
         // Consesnsus.

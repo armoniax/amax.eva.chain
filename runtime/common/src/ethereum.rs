@@ -21,7 +21,7 @@ where
 {
     fn convert_transaction(
         &self,
-        transaction: pallet_ethereum::Transaction,
+        transaction: crate::EthereumTransaction,
     ) -> primitives_core::UncheckedExtrinsic {
         let extrinsic = UncheckedExtrinsic::new(
             pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),

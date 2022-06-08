@@ -8,11 +8,13 @@ use std::{
 
 use futures::{future, StreamExt};
 // Substrate
-use sc_cli::SubstrateCli;
+use sc_cli::{RunCmd, SubstrateCli};
 use sc_client_api::BlockchainEvents;
-use sc_executor::NativeElseWasmExecutor;
+use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_keystore::LocalKeystore;
-use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
+use sc_service::{
+    error::Error as ServiceError, BasePath, Configuration, PartialComponents, TaskManager,
+};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 // Frontier
 use fc_consensus::FrontierBlockImport;
@@ -20,60 +22,59 @@ use fc_db::Backend as FrontierBackend;
 use fc_mapping_sync::{MappingSyncWorker, SyncStrategy};
 use fc_rpc::{EthTask, OverrideHandle};
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
+use sp_api::ConstructRuntimeApi;
+use sp_runtime::traits::BlakeTwo256;
 // Local
-use amax_eva_runtime::{self, NodeBlock as Block, RuntimeApi};
+use crate::chain_spec::IdentifyVariant;
+use primitives_core::{Block, Chain};
 
-use crate::cli::Cli;
 #[cfg(feature = "manual-seal")]
 use crate::cli::Sealing;
+use crate::{
+    cli::Cli,
+    client::{Client, EvaExecutor, RuntimeApiCollection, WallEExecutor},
+};
 
-// Our native executor instance.
-pub struct ExecutorDispatch;
-impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
-    /// Only enable the benchmarking host functions when we actually want to benchmark.
-    #[cfg(feature = "runtime-benchmarks")]
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-    /// Otherwise we only use the default Substrate host functions.
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type ExtendHostFunctions = ();
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        amax_eva_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        amax_eva_runtime::native_version()
-    }
-}
-
-pub type FullClient =
-    sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+pub type FullClient<RuntimeApi, Executor> =
+    sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 #[cfg(feature = "aura")]
-pub type ConsensusResult = (
+pub type ConsensusResult<RuntimeApi, Executor> = (
     FrontierBlockImport<
         Block,
-        sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-        FullClient,
+        sc_finality_grandpa::GrandpaBlockImport<
+            FullBackend,
+            Block,
+            FullClient<RuntimeApi, Executor>,
+            FullSelectChain,
+        >,
+        FullClient<RuntimeApi, Executor>,
     >,
-    sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+    sc_finality_grandpa::LinkHalf<Block, FullClient<RuntimeApi, Executor>, FullSelectChain>,
 );
 
 #[cfg(feature = "manual-seal")]
-pub type ConsensusResult = (FrontierBlockImport<Block, Arc<FullClient>, FullClient>, Sealing);
+pub type ConsensusResult<RuntimeApi, Executor> = (
+    FrontierBlockImport<
+        Block,
+        Arc<FullClient<RuntimeApi, Executor>>,
+        FullClient<RuntimeApi, Executor>,
+    >,
+    Sealing,
+);
 
-pub fn new_partial(
+pub fn new_partial<RuntimeApi, Executor>(
     config: &Configuration,
     cli: &Cli,
 ) -> Result<
-    sc_service::PartialComponents<
-        FullClient,
+    PartialComponents<
+        FullClient<RuntimeApi, Executor>,
         FullBackend,
         FullSelectChain,
-        sc_consensus::DefaultImportQueue<Block, FullClient>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        sc_consensus::DefaultImportQueue<Block, FullClient<RuntimeApi, Executor>>,
+        sc_transaction_pool::FullPool<Block, FullClient<RuntimeApi, Executor>>,
         (
             Option<Telemetry>,
             ConsensusResult,
@@ -239,7 +240,18 @@ fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
 
 /// Builds a new service for a full client.
 #[cfg(feature = "aura")]
-pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
+pub fn new_full(
+    mut config: Configuration,
+    cli: &Cli,
+    chain: Chain,
+) -> Result<TaskManager, ServiceError>
+where
+    RuntimeApi:
+        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
+    RuntimeApi::RuntimeApi:
+        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+    Executor: NativeExecutionDispatch + 'static,
+{
     use sc_client_api::{BlockBackend, ExecutorProvider};
     use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 
@@ -259,7 +271,7 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
                 filter_pool,
                 (fee_history_cache, fee_history_cache_limit),
             ),
-    } = new_partial(&config, cli)?;
+    } = new_partial::<RuntimeApi, Executor>(&config, cli)?;
 
     if let Some(url) = &config.keystore_remote {
         match remote_keystore(url) {
@@ -351,6 +363,7 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
                 fee_history_cache_limit,
                 overrides: overrides.clone(),
                 block_data_cache: block_data_cache.clone(),
+                chain,
             };
 
             crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
@@ -475,8 +488,15 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 
 /// Builds a new service for a full client.
 #[cfg(feature = "manual-seal")]
-pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
-    let sc_service::PartialComponents {
+pub fn new_full(config: Configuration, cli: &Cli, chain: Chain) -> Result<TaskManager, ServiceError>
+where
+    RuntimeApi:
+        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
+    RuntimeApi::RuntimeApi:
+        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+    Executor: NativeExecutionDispatch + 'static,
+{
+    let PartialComponents {
         client,
         backend,
         mut task_manager,
@@ -492,7 +512,7 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
                 filter_pool,
                 (fee_history_cache, fee_history_cache_limit),
             ),
-    } = new_partial(&config, cli)?;
+    } = new_partial::<RuntimeApi, Executor>(&config, cli)?;
 
     if let Some(url) = &config.keystore_remote {
         match remote_keystore(url) {
@@ -569,6 +589,7 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
                 fee_history_cache_limit,
                 overrides: overrides.clone(),
                 block_data_cache: block_data_cache.clone(),
+                chain,
                 command_sink: Some(command_sink.clone()),
             };
 
@@ -662,17 +683,85 @@ pub(crate) fn db_config_dir(config: &Configuration) -> PathBuf {
         })
 }
 
+#[allow(unreachable_code)]
+pub fn build_full(config: Configuration, cmd: &RunCmd) -> Result<TaskManager, ServiceError> {
+    // TODO `is_eva` `is_wall_e` need a marco to simplify them, including the similar code in
+    // command.rs file
+    if config.chain_spec.is_eva() {
+        return new_full::<eva_runtime::RuntimeApi, EvaExecutor>(config, cmd, Chain::Eva)
+    }
+    if config.chain_spec.is_wall_e() {
+        return new_full::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cmd, Chain::WallE)
+    }
+    // if we add more runtime, this part need to make up those chain.
+    Err("All runtime type should be captured".into())
+}
+
+pub fn new_chain_ops(
+    config: &mut Configuration,
+    cmd: &RunCmd,
+) -> Result<
+    (
+        Arc<Client>,
+        Arc<FullBackend>,
+        sc_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
+        TaskManager,
+    ),
+    ServiceError,
+> {
+    if config.chain_spec.is_eva() {
+        return new_chain_ops_inner::<eva_runtime::RuntimeApi, EvaExecutor>(config, cmd)
+    }
+    if config.chain_spec.is_wall_e() {
+        return new_chain_ops_inner::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cmd)
+    }
+    // if we add more runtime, this part need to make up those chain.
+    Err("All runtime type should be captured".into())
+}
+#[allow(clippy::type_complexity)]
+fn new_chain_ops_inner<RuntimeApi, Executor>(
+    mut config: &mut Configuration,
+    cmd: &RunCmd,
+) -> Result<
+    (
+        Arc<Client>,
+        Arc<FullBackend>,
+        sc_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
+        TaskManager,
+    ),
+    ServiceError,
+>
+where
+    Client: From<Arc<FullClient<RuntimeApi, Executor>>>,
+    RuntimeApi:
+        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
+    RuntimeApi::RuntimeApi:
+        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+    Executor: NativeExecutionDispatch + 'static,
+{
+    config.keystore = sc_service::config::KeystoreConfig::InMemory;
+    let PartialComponents { client, backend, import_queue, task_manager, .. } =
+        new_partial::<RuntimeApi, Executor>(config, cmd)?;
+    Ok((Arc::new(Client::from(client)), backend, import_queue, task_manager))
+}
+
 // Spawn frontier tasks.
-pub fn spawn_frontier_tasks(
+pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
     task_manager: &TaskManager,
-    client: Arc<FullClient>,
+    client: Arc<FullClient<RuntimeApi, Executor>>,
     backend: Arc<FullBackend>,
     frontier_backend: Arc<fc_db::Backend<Block>>,
     filter_pool: Option<FilterPool>,
     overrides: Arc<OverrideHandle<Block>>,
     fee_history_cache: FeeHistoryCache,
     fee_history_cache_limit: u64,
-) {
+) where
+    RuntimeApi:
+        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
+    RuntimeApi::RuntimeApi:
+        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+    Executor: NativeExecutionDispatch + 'static,
+{
     task_manager.spawn_essential_handle().spawn(
         "frontier-mapping-sync-worker",
         Some("frontier"),

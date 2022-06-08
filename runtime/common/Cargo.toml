@@ -10,7 +10,9 @@ license = "GPL-3.0"
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 
 # Substrate
+sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 ## Substrate FRAME
@@ -33,6 +35,8 @@ std = [
     # Parity
     "codec/std",
     # Substrate
+    "sp-consensus-aura/std",
+    "sp-finality-grandpa/std",
     "sp-core/std",
     "sp-runtime/std",
     "sp-std/std",
