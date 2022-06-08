@@ -5,7 +5,7 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use jsonrpc_pubsub::manager::SubscriptionManager;
+use jsonrpsee::RpcModule;
 // Substrate
 use sc_client_api::{client::BlockchainEvents, AuxStore, Backend, StateBackend, StorageProvider};
 use sc_network::NetworkService;
@@ -99,7 +99,7 @@ where
 pub fn create_full<C, P, BE, A>(
     deps: FullDeps<C, P, A>,
     subscription_task_executor: SubscriptionTaskExecutor,
-) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
@@ -116,17 +116,17 @@ where
     A: ChainApi<Block = Block> + 'static,
 {
     // Substrate
-    use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+    use pallet_transaction_payment_rpc::{TransactionPaymentApiServer, TransactionPaymentRpc};
     #[cfg(feature = "manual-seal")]
-    use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApi};
-    use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
+    use substrate_frame_rpc_system::{SystemApiServer, SystemRpc};
     // Frontier
     use fc_rpc::{
-        Eth, EthApi, EthDevSigner, EthFilter, EthFilterApi, EthPubSub, EthPubSubApi, EthSigner,
-        HexEncodedIdProvider, Net, NetApi, Web3, Web3Api,
+        Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
+        EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
     };
 
-    let mut io = jsonrpc_core::IoHandler::default();
+    let mut io = RpcModule::new(());
     let FullDeps {
         client,
         pool,
@@ -146,68 +146,65 @@ where
         command_sink,
     } = deps;
 
-    io.extend_with(SystemApi::to_delegate(FullSystem::new(
-        client.clone(),
-        pool.clone(),
-        deny_unsafe,
-    )));
-
-    io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone())));
+    io.merge(SystemRpc::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+    io.merge(TransactionPaymentRpc::new(client.clone()).into_rpc())?;
 
     let mut signers = Vec::new();
     if enable_dev_signer {
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
-
-    io.extend_with(EthApi::to_delegate(Eth::new(
-        client.clone(),
-        pool.clone(),
-        graph,
-        Some(TransactionConverter),
-        network.clone(),
-        signers,
-        overrides.clone(),
-        backend.clone(),
-        is_authority,
-        block_data_cache.clone(),
-        fee_history_cache,
-        fee_history_cache_limit,
-        fc_rpc::format::Legacy,
-    )));
-
-    if let Some(filter_pool) = filter_pool {
-        io.extend_with(EthFilterApi::to_delegate(EthFilter::new(
+    io.merge(
+        Eth::new(
             client.clone(),
-            backend,
-            filter_pool,
-            500, // max stored filters
-            max_past_logs,
-            block_data_cache,
-        )));
+            pool.clone(),
+            graph,
+            Some(TransactionConverter),
+            network.clone(),
+            signers,
+            overrides.clone(),
+            backend.clone(),
+            is_authority,
+            block_data_cache.clone(),
+            fee_history_cache,
+            fee_history_cache_limit,
+            fc_rpc::format::Legacy,
+        )
+        .into_rpc(),
+    )?;
+    if let Some(filter_pool) = filter_pool {
+        io.merge(
+            EthFilter::new(
+                client.clone(),
+                backend,
+                filter_pool,
+                500, // max stored filters
+                max_past_logs,
+                block_data_cache,
+            )
+            .into_rpc(),
+        )?;
     }
-
-    io.extend_with(EthPubSubApi::to_delegate(EthPubSub::new(
-        pool,
-        client.clone(),
-        network.clone(),
-        SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
-            HexEncodedIdProvider::default(),
-            Arc::new(subscription_task_executor),
-        ),
-        overrides,
-    )));
-
-    io.extend_with(NetApi::to_delegate(Net::new(client.clone(), network, true)));
-    io.extend_with(Web3Api::to_delegate(Web3::new(client)));
+    io.merge(
+        EthPubSub::new(
+            pool,
+            client.clone(),
+            network.clone(),
+            subscription_task_executor,
+            overrides,
+        )
+        .into_rpc(),
+    )?;
+    io.merge(Net::new(client.clone(), network, true).into_rpc())?;
+    io.merge(Web3::new(client).into_rpc())?;
 
     #[cfg(feature = "manual-seal")]
     if let Some(command_sink) = command_sink {
-        io.extend_with(
+        io.merge(
             // We provide the rpc handler with the sending end of the channel to allow the rpc
             // send EngineCommands to the background block authorship task.
-            ManualSealApi::to_delegate(ManualSeal::new(command_sink)),
-        );
+            ManualSeal::new(command_sink).into_rpc(),
+        )?;
     }
 
-    io
+    Ok(io)
 }

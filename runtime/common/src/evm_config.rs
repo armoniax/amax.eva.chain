@@ -4,10 +4,13 @@ use sp_runtime::Permill;
 
 pub struct FixedGasPrice;
 impl pallet_evm::FeeCalculator for FixedGasPrice {
-    fn min_gas_price() -> U256 {
+    fn min_gas_price() -> (U256, Weight) {
         // TODO check the min_gas_price implementation in moonbeam
-        // (1 * currency::GIGAWEI * currency::SUPPLY_FACTOR).into()
-        0.into()
+        // (
+        // 	(1 * currency::GIGAWEI * currency::SUPPLY_FACTOR).into(),
+        // 	0u64,
+        // )
+        (0.into(), 0u64)
     }
 }
 
