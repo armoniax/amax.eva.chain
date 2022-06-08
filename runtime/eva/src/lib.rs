@@ -19,7 +19,7 @@ use sp_runtime::{
         BlakeTwo256, Block as BlockT, Dispatchable, IdentityLookup, NumberFor, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, ConsensusEngineId, Perbill, Permill,
+    ApplyExtrinsicResult, ConsensusEngineId, Permill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -28,7 +28,7 @@ use frame_support::{
     construct_runtime, parameter_types,
     traits::{FindAuthor, KeyOwnerProofSystem},
     weights::{
-        constants::{RocksDbWeight, WEIGHT_PER_SECOND},
+        constants::{RocksDbWeight, },
         IdentityFee,
     },
 };
@@ -44,7 +44,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
-pub use primitives_core::{
+use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     Signature,
 };
@@ -62,7 +62,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("armonia-eva"),
     impl_name: create_runtime_str!("armonia-eva"),
     authoring_version: 1,
-    spec_version: 100,
+    spec_version: 1,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -81,16 +81,8 @@ pub fn native_version() -> sp_version::NativeVersion {
 // System && Utility.
 // ################################################################################################
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
-    pub const BlockHashCount: BlockNumber = 2400;
-    /// We allow for 2 seconds of compute with a 6 second average block time.
-    pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-        ::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
-    pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-        ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
 }
 
@@ -98,9 +90,9 @@ impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
     type BaseCallFilter = frame_support::traits::Everything;
     /// Block & extrinsics weights: base values and limits.
-    type BlockWeights = BlockWeights;
+    type BlockWeights = system::BlockWeights;
     /// The maximum length of a block (in bytes).
-    type BlockLength = BlockLength;
+    type BlockLength = system::BlockLength;
     /// The ubiquitous origin type.
     type Origin = Origin;
     /// The aggregated dispatch type that is available for extrinsics.
@@ -122,7 +114,7 @@ impl frame_system::Config for Runtime {
     /// The ubiquitous event type.
     type Event = Event;
     /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-    type BlockHashCount = BlockHashCount;
+    type BlockHashCount = system::BlockHashCount;
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// Version of the runtime.
@@ -244,7 +236,6 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 }
 
 parameter_types! {
-    // TODO need to set chainid(for testnet version we will set 161)
     pub const ChainId: u64 = 160;
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
 }
@@ -258,11 +249,11 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = evm_config::IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
-    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
     type BlockGasLimit = eth_const::BlockGasLimit;
+    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
 }

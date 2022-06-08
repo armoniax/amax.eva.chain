@@ -1,7 +1,8 @@
 //! A set of constant values used in substrate runtime.
 
-use frame_support::{parameter_types, traits::ConstU32};
+use frame_support::{weights::constants::WEIGHT_PER_SECOND, parameter_types, traits::ConstU32};
 use sp_core::U256;
+use sp_runtime::Perbill;
 
 /// Consensus constants.
 pub mod consensus {
@@ -25,7 +26,18 @@ pub mod balances {
 /// System constructs
 pub mod system {
     use super::*;
+    use primitives_core::BlockNumber;
+
     pub type MaxConsumers = ConstU32<16>;
+
+    const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+    parameter_types! {
+        pub const BlockHashCount: BlockNumber = 2400;
+        pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
+            ::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
+        pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
+            ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+    }
 }
 
 /// Time constants.
