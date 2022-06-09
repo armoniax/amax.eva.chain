@@ -298,10 +298,8 @@ impl pallet_base_fee::Config for Runtime {
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
 }
 
-// TODO:
 parameter_types! {
-    pub TechnicalMotionDuration: BlockNumber = 3 * DAYS;
-    pub const TechnicalMaxProposals: u32 = 30;
+    /// The maximum number of technical committee members.
     pub const TechnicalMaxMembers: u32 = 30;
 }
 
@@ -310,8 +308,12 @@ impl pallet_collective::Config<TechnicalCommitteeInstance> for Runtime {
     type Origin = Origin;
     type Proposal = Call;
     type Event = Event;
-    type MotionDuration = TechnicalMotionDuration;
-    type MaxProposals = TechnicalMaxProposals;
+    /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
+    /// Motions may end in fewer blocks if enough votes are cast to determine the result.
+    type MotionDuration = ConstU32<{ 3 * DAYS }>;
+    /// The maximum number of Proposals that can be open in the technical committee at once.
+    type MaxProposals = ConstU32<30>;
+    /// The maximum number of technical committee members.
     type MaxMembers = TechnicalMaxMembers;
     type DefaultVote = pallet_collective::PrimeDefaultVote;
     type WeightInfo = ();
