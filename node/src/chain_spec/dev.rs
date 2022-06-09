@@ -45,7 +45,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
-                accounts,
+                accounts.clone(),
                 true,
             )
         },
@@ -86,7 +86,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
-                accounts,
+                accounts.clone(),
                 true,
             )
         },
