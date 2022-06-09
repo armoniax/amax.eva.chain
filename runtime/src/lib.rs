@@ -28,7 +28,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU128, ConstU32, ConstU8, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_PER_SECOND},
         IdentityFee,
@@ -40,6 +40,7 @@ use pallet_transaction_payment::CurrencyAdapter;
 // re-exports
 // A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
+use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_ethereum::{Call as EthereumCall, Transaction as EthereumTransaction};
 pub use pallet_timestamp::Call as TimestampCall;
@@ -52,11 +53,11 @@ pub use primitives_core::{
 };
 
 pub mod constants;
-use self::constants::time::*;
+use constants::time::*;
 mod evm_config;
-use self::evm_config::*;
+use evm_config::*;
 mod precompiles;
-use self::precompiles::FrontierPrecompiles;
+use precompiles::FrontierPrecompiles;
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -297,6 +298,45 @@ impl pallet_base_fee::Config for Runtime {
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
 }
 
+// TODO:
+parameter_types! {
+    pub TechnicalMotionDuration: BlockNumber = 3 * DAYS;
+    pub const TechnicalMaxProposals: u32 = 30;
+    pub const TechnicalMaxMembers: u32 = 30;
+}
+
+type TechnicalCommitteeInstance = pallet_collective::Instance1;
+impl pallet_collective::Config<TechnicalCommitteeInstance> for Runtime {
+    type Origin = Origin;
+    type Proposal = Call;
+    type Event = Event;
+    type MotionDuration = TechnicalMotionDuration;
+    type MaxProposals = TechnicalMaxProposals;
+    type MaxMembers = TechnicalMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = ();
+}
+
+pub type TechnicalCommitteeMembershipInstance = pallet_membership::Instance1;
+
+pub type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+    EnsureRoot<AccountId>,
+    pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCommitteeInstance, 2, 3>,
+>;
+
+impl pallet_membership::Config<TechnicalCommitteeMembershipInstance> for Runtime {
+    type Event = Event;
+    type AddOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type RemoveOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type SwapOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type ResetOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type PrimeOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type MembershipInitialized = TechnicalCommittee;
+    type MembershipChanged = TechnicalCommittee;
+    type MaxMembers = TechnicalMaxMembers;
+    type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -307,8 +347,6 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
-        // Sudo (temporary).
-        Sudo: pallet_sudo = 255,
 
         // Monetary.
         Balances: pallet_balances = 10,
@@ -322,6 +360,13 @@ construct_runtime!(
         EVM: pallet_evm = 30,
         Ethereum: pallet_ethereum = 31,
         BaseFee: pallet_base_fee = 32,
+
+        // Governance stuff
+        TechnicalCommittee: pallet_collective::<Instance1> = 67,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 68,
+
+        // Sudo (temporary).
+        Sudo: pallet_sudo = 255,
     }
 );
 
