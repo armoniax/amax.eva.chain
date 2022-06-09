@@ -45,8 +45,15 @@ impl SubstrateCli for Cli {
         })
     }
 
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &amax_eva_runtime::VERSION
+    fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
+        use crate::chain_spec::IdentifyVariant;
+        if chain_spec.is_eva() {
+            return &eva_runtime::VERSION
+        }
+        if chain_spec.is_wall_e() {
+            return &wall_e_runtime::VERSION
+        }
+        unreachable!("All chains should be captured");
     }
 }
 
@@ -185,7 +192,7 @@ pub fn run() -> sc_cli::Result<()> {
         None => {
             let runner = cli.create_runner_for_run_cmd(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
-                service::new_full(config, &cli).map_err(sc_cli::Error::Service)
+                service::build_full(config, &cli).map_err(sc_cli::Error::Service)
             })
         },
         _ => unimplemented!(""),

@@ -1,9 +1,8 @@
 // Substrate
 use sc_service::{ChainType, Properties};
 // Local
-use wall_e_runtime::GenesisConfig;
-
-use wall_e_runtime::{AccountId, AuraId, GrandpaId, SS58Prefix, WASM_BINARY};
+use primitives_core::AccountId;
+use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
 
 use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 
@@ -121,7 +120,7 @@ fn genesis(
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
 ) -> GenesisConfig {
-    use amax_eva_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
+    use wall_e_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
     GenesisConfig {
         // System && Utility.
         system: SystemConfig {

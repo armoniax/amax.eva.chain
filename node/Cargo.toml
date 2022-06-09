@@ -58,6 +58,7 @@ sp-session = { git = "https://github.com/paritytech/substrate", branch = "polkad
 sp-storage = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
 sp-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
 ## Substrate FRAME
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }

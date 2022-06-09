@@ -16,3 +16,5 @@ mod service;
 
 pub use self::{cli::*, command::*};
 pub use sc_cli::{Error, Result};
+
+use client::{FullBackend, FullClient};

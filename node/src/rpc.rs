@@ -25,7 +25,7 @@ use fc_rpc::{
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
 // Local
-use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index, TransactionConverter};
+use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
 use runtime_common::EthereumTransaction;
 
 enum TransactionConverters {
@@ -185,7 +185,7 @@ where
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
 
-    let converter: TransactionConverters = chain_type.into();
+    let converter: TransactionConverters = chain.into();
     io.merge(
         Eth::new(
             client.clone(),

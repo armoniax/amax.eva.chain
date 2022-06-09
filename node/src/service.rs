@@ -8,7 +8,7 @@ use std::{
 
 use futures::{future, StreamExt};
 // Substrate
-use sc_cli::{RunCmd, SubstrateCli};
+use sc_cli::SubstrateCli;
 use sc_client_api::BlockchainEvents;
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_keystore::LocalKeystore;
@@ -24,6 +24,7 @@ use fc_rpc::{EthTask, OverrideHandle};
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use sp_api::ConstructRuntimeApi;
 use sp_runtime::traits::BlakeTwo256;
+use sp_trie::PrefixedMemoryDB;
 // Local
 use crate::chain_spec::IdentifyVariant;
 use primitives_core::{Block, Chain};
@@ -77,14 +78,21 @@ pub fn new_partial<RuntimeApi, Executor>(
         sc_transaction_pool::FullPool<Block, FullClient<RuntimeApi, Executor>>,
         (
             Option<Telemetry>,
-            ConsensusResult,
+            ConsensusResult<RuntimeApi, Executor>,
             Arc<fc_db::Backend<Block>>,
             Option<FilterPool>,
             (FeeHistoryCache, FeeHistoryCacheLimit),
         ),
     >,
     ServiceError,
-> {
+>
+where
+    RuntimeApi:
+        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
+    RuntimeApi::RuntimeApi:
+        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+    Executor: sc_executor::NativeExecutionDispatch + 'static,
+{
     if config.keystore_remote.is_some() {
         return Err(ServiceError::Other("Remote Keystores are not supported.".into()))
     }
@@ -100,7 +108,7 @@ pub fn new_partial<RuntimeApi, Executor>(
         })
         .transpose()?;
 
-    let executor = NativeElseWasmExecutor::<ExecutorDispatch>::new(
+    let executor = NativeElseWasmExecutor::<Executor>::new(
         config.wasm_method,
         config.default_heap_pages,
         config.max_runtime_instances,
@@ -240,7 +248,7 @@ fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
 
 /// Builds a new service for a full client.
 #[cfg(feature = "aura")]
-pub fn new_full(
+pub fn new_full<RuntimeApi, Executor>(
     mut config: Configuration,
     cli: &Cli,
     chain: Chain,
@@ -255,7 +263,7 @@ where
     use sc_client_api::{BlockBackend, ExecutorProvider};
     use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 
-    let sc_service::PartialComponents {
+    let PartialComponents {
         client,
         backend,
         mut task_manager,
@@ -488,7 +496,11 @@ where
 
 /// Builds a new service for a full client.
 #[cfg(feature = "manual-seal")]
-pub fn new_full(config: Configuration, cli: &Cli, chain: Chain) -> Result<TaskManager, ServiceError>
+pub fn new_full<RuntimeApi, Executor>(
+    config: Configuration,
+    cli: &Cli,
+    chain: Chain,
+) -> Result<TaskManager, ServiceError>
 where
     RuntimeApi:
         ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
@@ -684,14 +696,14 @@ pub(crate) fn db_config_dir(config: &Configuration) -> PathBuf {
 }
 
 #[allow(unreachable_code)]
-pub fn build_full(config: Configuration, cmd: &RunCmd) -> Result<TaskManager, ServiceError> {
+pub fn build_full(config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
     // TODO `is_eva` `is_wall_e` need a marco to simplify them, including the similar code in
     // command.rs file
     if config.chain_spec.is_eva() {
-        return new_full::<eva_runtime::RuntimeApi, EvaExecutor>(config, cmd, Chain::Eva)
+        return new_full::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli, Chain::Eva)
     }
     if config.chain_spec.is_wall_e() {
-        return new_full::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cmd, Chain::WallE)
+        return new_full::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli, Chain::WallE)
     }
     // if we add more runtime, this part need to make up those chain.
     Err("All runtime type should be captured".into())
@@ -699,7 +711,7 @@ pub fn build_full(config: Configuration, cmd: &RunCmd) -> Result<TaskManager, Se
 
 pub fn new_chain_ops(
     config: &mut Configuration,
-    cmd: &RunCmd,
+    cli: &Cli,
 ) -> Result<
     (
         Arc<Client>,
@@ -710,10 +722,10 @@ pub fn new_chain_ops(
     ServiceError,
 > {
     if config.chain_spec.is_eva() {
-        return new_chain_ops_inner::<eva_runtime::RuntimeApi, EvaExecutor>(config, cmd)
+        return new_chain_ops_inner::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli)
     }
     if config.chain_spec.is_wall_e() {
-        return new_chain_ops_inner::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cmd)
+        return new_chain_ops_inner::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli)
     }
     // if we add more runtime, this part need to make up those chain.
     Err("All runtime type should be captured".into())
@@ -721,7 +733,7 @@ pub fn new_chain_ops(
 #[allow(clippy::type_complexity)]
 fn new_chain_ops_inner<RuntimeApi, Executor>(
     mut config: &mut Configuration,
-    cmd: &RunCmd,
+    cli: &Cli,
 ) -> Result<
     (
         Arc<Client>,
@@ -741,7 +753,7 @@ where
 {
     config.keystore = sc_service::config::KeystoreConfig::InMemory;
     let PartialComponents { client, backend, import_queue, task_manager, .. } =
-        new_partial::<RuntimeApi, Executor>(config, cmd)?;
+        new_partial::<RuntimeApi, Executor>(config, cli)?;
     Ok((Arc::new(Client::from(client)), backend, import_queue, task_manager))
 }
 

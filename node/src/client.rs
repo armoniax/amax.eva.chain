@@ -197,18 +197,6 @@ impl Client {
     }
 }
 
-impl ClientHandle for Client {
-    fn execute_with<T: ExecuteWithClient>(&self, t: T) -> T::Output {
-        with_client! {
-            self,
-            client,
-            {
-                T::execute_with_client::<_, _, FullBackend>(t, client.clone())
-            }
-        }
-    }
-}
-
 impl UsageProvider<Block> for Client {
     fn usage_info(&self) -> sc_client_api::ClientInfo<Block> {
         with_client! {
@@ -309,7 +297,7 @@ impl sc_client_api::BlockBackend<Block> for Client {
             self,
             client,
             {
-                client.requires_full_sync(id)
+                client.requires_full_sync()
             }
         }
     }
