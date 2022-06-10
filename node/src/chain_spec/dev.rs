@@ -141,9 +141,6 @@ fn testnet_genesis(
         ethereum: Default::default(),
         base_fee: Default::default(),
         technical_committee: Default::default(),
-        technical_committee_membership: TechnicalCommitteeMembershipConfig {
-            members: vec![],
-            phantom: Default::default(),
-        },
+        technical_committee_membership: Default::default(),
     }
 }
