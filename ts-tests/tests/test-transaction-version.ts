@@ -30,7 +30,7 @@ describeWithFrontier("Frontier RPC (Transaction Version)", (context) => {
 			type: 0,
 			nonce: 0,
 			gasLimit: "0x100000",
-			chainId: 42,
+			chainId: 160,
 		};
 		const tx_hash = (await sendTransaction(context, tx)).hash;
 		await createAndFinalizeBlock(context.web3);
@@ -59,7 +59,7 @@ describeWithFrontier("Frontier RPC (Transaction Version)", (context) => {
 			accessList: [],
 			nonce: 1,
 			gasLimit: "0x100000",
-			chainId: 42,
+			chainId: 160,
 		};
 		const tx_hash = (await sendTransaction(context, tx)).hash;
 		await createAndFinalizeBlock(context.web3);
@@ -87,7 +87,7 @@ describeWithFrontier("Frontier RPC (Transaction Version)", (context) => {
 			accessList: [],
 			nonce: 2,
 			gasLimit: "0x100000",
-			chainId: 42,
+			chainId: 160,
 		};
 		const tx_hash = (await sendTransaction(context, tx)).hash;
 		await createAndFinalizeBlock(context.web3);

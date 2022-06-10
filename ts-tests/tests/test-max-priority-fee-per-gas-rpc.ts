@@ -44,7 +44,7 @@ describeWithFrontier("Frontier RPC (Max Priority Fee Per Gas)", (context) => {
 					accessList: [],
 					nonce: nonce,
 					gasLimit: "0x5208",
-					chainId: 42
+					chainId: 160
 				});
 				nonce++;
 			}

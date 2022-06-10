@@ -130,7 +130,7 @@ export async function startFrontierNode(provider?: string): Promise<{ web3: Web3
 	}
 
 	let ethersjs = new ethers.providers.StaticJsonRpcProvider(`http://localhost:${RPC_PORT}`, {
-		chainId: 42,
+		chainId: 160,
 		name: "frontier-dev",
 	});
 

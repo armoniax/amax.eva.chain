@@ -36,6 +36,7 @@ describeWithFrontier("Frontier RPC (Revert Reason)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, contractAddress, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		try {
 			await contract.methods.max10(30).call();

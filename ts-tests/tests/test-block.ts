@@ -67,7 +67,7 @@ describeWithFrontier("Frontier RPC (Block)", (context) => {
 
 	step("should have valid timestamp after block production", async function () {
 		const block = await context.web3.eth.getBlock("latest");
-		expect(block.timestamp).to.be.eq(6);
+		expect(block.timestamp).to.be.eq(2); // THIS will changed by block time changed
 	});
 
 	it("genesis block should be already available by hash", async function () {
@@ -115,7 +115,8 @@ describeWithFrontier("Frontier RPC (Block)", (context) => {
 			//parentHash: "0x04540257811b46d103d9896e7807040e7de5080e285841c5430d1a81588a0ce4",
 			receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 			size: 507,
-			timestamp: 6,
+			// THIS will changed by block time changed
+			timestamp: 2,
 			totalDifficulty: "0",
 			//transactions: [],
 			transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",

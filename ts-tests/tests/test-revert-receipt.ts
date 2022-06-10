@@ -21,7 +21,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 
 	it("should provide a tx receipt after successful deployment", async function () {
 		this.timeout(15000);
-		const GOOD_TX_HASH = '0xe73cae1b1105e805ec524b7ffdc4144041e72ff5fb539757ab2d4eef255bfe2d';
+		const GOOD_TX_HASH = '0x8ff277d5071414d7952ac85fc8455aaeacc2af6b5c56ee53df71d6fdece42e5a';
 
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
@@ -46,9 +46,9 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		const receipt = await context.web3.eth.getTransactionReceipt(GOOD_TX_HASH);
 		expect(receipt).to.include({
-			contractAddress: '0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a',
+			contractAddress: '0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3',
 			cumulativeGasUsed: 67231,
-			from: '0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac',
+			from: '0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac',
 			gasUsed: 67231,
 			to: null,
 			transactionHash: GOOD_TX_HASH,
@@ -61,7 +61,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 		this.timeout(15000);
 		// Transaction hash depends on which nonce we're using
 		//const FAIL_TX_HASH = '0x89a956c4631822f407b3af11f9251796c276655860c892919f848699ed570a8d'; //nonce 1
-		const FAIL_TX_HASH = '0x0aad023a79ccfe0290b8cb47a807720bf4ffcf60225f3fa786eefd95b538d87d'; //nonce 2
+		const FAIL_TX_HASH = '0x9b175cc21fb8b9c2fdbab97d5d6c1c9b2d54dcd4c299b33ac559b8c90a809236'; //nonce 2
 
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
@@ -85,9 +85,9 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		const receipt = await context.web3.eth.getTransactionReceipt(FAIL_TX_HASH);
 		expect(receipt).to.include({
-			contractAddress: '0x5c4242beB94dE30b922f57241f1D02f36e906915',
+			contractAddress: '0x970951a12F975E6762482ACA81E57D5A2A4e73F4',
 			cumulativeGasUsed: 54600,
-			from: '0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac',
+			from: '0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac',
 			gasUsed: 54600,
 			to: null,
 			transactionHash: FAIL_TX_HASH,

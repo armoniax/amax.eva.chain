@@ -36,7 +36,7 @@ describeWithFrontier("Frontier RPC (Fee History)", (context) => {
 
 	async function createBlocks(block_count, priority_fees) {
 		for(var b = 0; b < block_count; b++) {
-			for(var p = 0; p < priority_fees.length; p++) {
+			for (var p = 0; p < priority_fees.length; p++) {
 				await sendTransaction(context, {
 					from: GENESIS_ACCOUNT,
 					data: TEST_CONTRACT_BYTECODE,
@@ -46,7 +46,7 @@ describeWithFrontier("Frontier RPC (Fee History)", (context) => {
 					accessList: [],
 					nonce: nonce,
 					gasLimit: "0x100000",
-					chainId: 42
+					chainId: 160
 				});
 				nonce++;
 			}

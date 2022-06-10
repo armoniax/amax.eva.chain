@@ -10,7 +10,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 
 	const TEST_CONTRACT_BYTECODE = Test.bytecode;
 	const TEST_CONTRACT_ABI = Test.abi as AbiItem[];
-	const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a"; // Those test are ordered. In general this should be avoided, but due to the time it takes	// to spin up a frontier node, it saves a lot of time.
+	let FIRST_CONTRACT_ADDRESS = "0x00"; // Those test are ordered. In general this should be avoided, but due to the time it takes	// to spin up a frontier node, it saves a lot of time.
 
 	before("create the contract", async function () {
 		this.timeout(15000);
@@ -26,6 +26,12 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		);
 		await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
 		await createAndFinalizeBlock(context.web3);
+
+		// set the contract address
+		let receipt0 = await context.web3.eth.getTransactionReceipt(
+			tx.transactionHash
+		);
+		FIRST_CONTRACT_ADDRESS = receipt0.contractAddress;
 	});
 
 	it("get transaction by hash", async () => {
@@ -41,6 +47,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 
 		expect(await contract.methods.multiply(3).call()).to.equal("21");
@@ -50,6 +57,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		let block = await context.web3.eth.getBlock("latest");
 		expect(await contract.methods.currentBlock().call()).to.eq(block.number.toString());
@@ -64,15 +72,24 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		let number = (await context.web3.eth.getBlock("latest")).number;
-		let last = number + 256;
-		for(let i = number; i <= last; i++) {
+		let last = number + 2400;
+		for(let i = number; i < last; i++) {
 			let hash = (await context.web3.eth.getBlock("latest")).hash;
 			expect(await contract.methods.blockHash(i).call()).to.eq(hash);
 			await createAndFinalizeBlockNowait(context.web3);
 		}
-		// should not store more than 256 hashes
+
+		// should store less than 2400 hashes
+		expect(await contract.methods.blockHash(number).call()).to.eq(
+			"0x45eaa4a9dbe521543b30b4b45cbb1ba811d483061a29351ea2fc5bdc27f3b62e"
+		);
+
+		await createAndFinalizeBlockNowait(context.web3);
+		
+		// should not store more than 2400 hashes
 		expect(await contract.methods.blockHash(number).call()).to.eq(
 			"0x0000000000000000000000000000000000000000000000000000000000000000"
 		);
@@ -82,6 +99,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		// Max u32
 		expect(await contract.methods.gasLimit().call()).to.eq('4294967295');
@@ -92,6 +110,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		const contract = new context.web3.eth.Contract([{ ...TEST_CONTRACT_ABI[0], inputs: [] }], FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		await contract.methods
 			.multiply()

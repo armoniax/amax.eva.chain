@@ -9,7 +9,7 @@ describeWithFrontier("Frontier RPC (Precompile)", (context) => {
 
 	const TEST_CONTRACT_BYTECODE = ECRecoverTests.bytecode;
 	const TEST_CONTRACT_ABI = ECRecoverTests.abi as AbiItem[];
-	const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
+	let FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
 
 	let web3;
 
@@ -27,6 +27,13 @@ describeWithFrontier("Frontier RPC (Precompile)", (context) => {
 		);
 		await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
 		await createAndFinalizeBlock(context.web3);
+
+		// set the contract address
+		let receipt0 = await context.web3.eth.getTransactionReceipt(
+			tx.transactionHash
+		);
+		FIRST_CONTRACT_ADDRESS = receipt0.contractAddress;
+
 		// ensure native web3 sending works as well as truffle provider
 		web3.eth.accounts.wallet.add(GENESIS_ACCOUNT_PRIVATE_KEY);
 		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
@@ -61,6 +68,7 @@ describeWithFrontier("Frontier RPC (Precompile)", (context) => {
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
+			gas: 100000,
 		});
 		
 		await contract.methods

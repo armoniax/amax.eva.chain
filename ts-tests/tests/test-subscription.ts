@@ -154,10 +154,10 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 	step("should subscribe to logs by multiple addresses", async function (done) {
 		subscription = context.web3.eth.subscribe("logs", {
 			address: [
-				"0xF8cef78E923919054037a1D03662bBD884fF4edf",
-				"0x42e2EE7Ba8975c473157634Ac2AF4098190fc741",
-				"0x5c4242beB94dE30b922f57241f1D02f36e906915",
-				"0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a"
+				"0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3",
+				"0x970951a12F975E6762482ACA81E57D5A2A4e73F4",
+				"0x3ed62137c5DB927cb137c26455969116BF0c23Cb",
+				"0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23"
 			]
 		}, function(error, result){});
 
@@ -237,7 +237,7 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 	step("should get past events #2: by address", async function (done) {
 		subscription = context.web3.eth.subscribe("logs", {
 			fromBlock: "0x0",
-			address: "0x42e2EE7Ba8975c473157634Ac2AF4098190fc741"
+			address: "0x970951a12F975E6762482ACA81E57D5A2A4e73F4"
 		}, function(error, result){});
 
 		let data = [];
@@ -257,7 +257,7 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 		subscription = context.web3.eth.subscribe("logs", {
 			fromBlock: "0x0",
 			topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
-			address: "0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a"
+			address: "0x970951a12F975E6762482ACA81E57D5A2A4e73F4"
 		}, function(error, result){});
 
 		let data = [];
@@ -279,10 +279,10 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 			topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
 			address: [
 				"0xe573BCA813c741229ffB2488F7856C6cAa841041",
-				"0xF8cef78E923919054037a1D03662bBD884fF4edf",
-				"0x42e2EE7Ba8975c473157634Ac2AF4098190fc741",
-				"0x5c4242beB94dE30b922f57241f1D02f36e906915",
-				"0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a"
+				"0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3",
+				"0x970951a12F975E6762482ACA81E57D5A2A4e73F4",
+				"0x3ed62137c5DB927cb137c26455969116BF0c23Cb",
+				"0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23"
 			]
 		}, function(error, result){});
 
@@ -407,10 +407,10 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 				[
 					"0x0000000000000000000000000000000000000000000000000000000000000000",
-					"0x0000000000000000000000006be02d1d3665660d22ff9624b7be0551ee1ac91b"
+					"0x000000000000000000000000f24ff3a9cf04c71dbc94d0b566f7a27b94566cac"
 				],
 				[
-					"0x0000000000000000000000006be02d1d3665660d22ff9624b7be0551ee1ac91b",
+					"0x000000000000000000000000f24ff3a9cf04c71dbc94d0b566f7a27b94566cac",
 					"0x0000000000000000000000000000000000000000000000000000000000000000"
 				]
 			]
