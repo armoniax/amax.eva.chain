@@ -84,7 +84,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 
 		// should store less than 2400 hashes
 		expect(await contract.methods.blockHash(number).call()).to.eq(
-			"0x45eaa4a9dbe521543b30b4b45cbb1ba811d483061a29351ea2fc5bdc27f3b62e"
+			"0xf6560d56da3636df1b408d1d38bee98b0d44de425c1bec5e296c5811cb295149"
 		);
 
 		await createAndFinalizeBlockNowait(context.web3);

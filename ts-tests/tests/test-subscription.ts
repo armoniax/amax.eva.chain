@@ -52,7 +52,7 @@ describeWithFrontier("Frontier RPC (Subscription)", (context) => {
 
 		subscription.unsubscribe();
 		expect(connected).to.equal(true);
-		expect(subscriptionId).to.have.lengthOf(34);
+		expect(subscriptionId).to.have.lengthOf(16);
 	}).timeout(20000);;
 
 	step("should get newHeads stream", async function (done) {
