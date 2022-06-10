@@ -1,10 +1,7 @@
 // Substrate
 use sc_service::{ChainType, Properties};
 // Local
-use amax_eva_runtime::{
-    AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix,
-    WASM_BINARY,
-};
+use amax_eva_runtime::{AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
 
 use crate::chain_spec::{authority_keys_from_seed, generate_dev_accounts};
 

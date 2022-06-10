@@ -34,13 +34,13 @@ use frame_support::{
         IdentityFee,
     },
 };
+use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
 // re-exports
 // A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
-use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_ethereum::{Call as EthereumCall, Transaction as EthereumTransaction};
 pub use pallet_timestamp::Call as TimestampCall;
@@ -235,7 +235,7 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 // ################################################################################################
-// EVM compatiblity.
+// EVM compatibility.
 // ################################################################################################
 
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
@@ -271,11 +271,11 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
-    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;
+    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
 }
