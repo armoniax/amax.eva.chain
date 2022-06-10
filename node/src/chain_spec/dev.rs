@@ -2,7 +2,7 @@
 use sc_service::{ChainType, Properties};
 // Local
 use amax_eva_runtime::{
-    AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, TechnicalCommitteeMembershipConfig,
+    AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix,
     WASM_BINARY,
 };
 
