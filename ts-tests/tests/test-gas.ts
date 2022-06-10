@@ -34,7 +34,7 @@ function estimation_variance(binary_search_estimation, one_off_estimation) {
 }
 
 describeWithFrontier("Frontier RPC (Gas)", (context) => {
-	const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
+	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
 
 	const TEST_CONTRACT_BYTECODE = Test.bytecode;
 	const TEST_CONTRACT_ABI = Test.abi as AbiItem[];

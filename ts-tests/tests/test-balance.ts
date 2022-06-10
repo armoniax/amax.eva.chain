@@ -4,9 +4,9 @@ import { step } from "mocha-steps";
 import { createAndFinalizeBlock, describeWithFrontier, customRequest } from "./util";
 
 describeWithFrontier("Frontier RPC (Balance)", (context) => {
-	const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
-	const GENESIS_ACCOUNT_BALANCE = "340282366920938463463374607431768210955";
-	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342";
+	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
+	const GENESIS_ACCOUNT_BALANCE = "1152921504606846976";
+	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
 	const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
 	step("genesis balance is setup correctly", async function () {
@@ -24,8 +24,8 @@ describeWithFrontier("Frontier RPC (Balance)", (context) => {
 			gas: "0x100000",
 		}, GENESIS_ACCOUNT_PRIVATE_KEY);
 		await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
-		const expectedGenesisBalance = "340282366920938463463374586431768210443";
-		const expectedTestBalance = "12";
+		const expectedGenesisBalance = "1152900504606846464";
+		const expectedTestBalance = "512";
 		expect(await context.web3.eth.getBalance(GENESIS_ACCOUNT, "pending")).to.equal(expectedGenesisBalance);
 		expect(await context.web3.eth.getBalance(TEST_ACCOUNT, "pending")).to.equal(expectedTestBalance);
 		await createAndFinalizeBlock(context.web3);

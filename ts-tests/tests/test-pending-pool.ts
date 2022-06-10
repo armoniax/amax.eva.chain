@@ -3,8 +3,8 @@ import { expect } from "chai";
 import { createAndFinalizeBlock, customRequest, describeWithFrontier } from "./util";
 
 describeWithFrontier("Frontier RPC (Pending Pool)", (context) => {
-	const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
-	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342";
+	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
+	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
 
 	// Solidity: contract test { function multiply(uint a) public pure returns(uint d) {return a * 7;}}
 	const TEST_CONTRACT_BYTECODE =
@@ -51,8 +51,8 @@ describeWithFrontier("Frontier RPC (Pending Pool)", (context) => {
 });
 
 describeWithFrontier("Frontier RPC (Pending Transaction Count)", (context) => {
-	const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
-	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342";
+	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
+	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
 	const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
 	it("should return pending transaction count", async function () {
