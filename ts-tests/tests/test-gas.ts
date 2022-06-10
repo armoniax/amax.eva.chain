@@ -40,7 +40,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	const TEST_CONTRACT_ABI = Test.abi as AbiItem[];
 	const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a"; // Those test are ordered. In general this should be avoided, but due to the time it takes	// to spin up a frontier node, it saves a lot of time.
 
-	it.skip("eth_estimateGas for contract creation", async function () {
+	it("eth_estimateGas for contract creation", async function () {
 		// The value returned as an estimation by the evm with estimate mode ON.
 		let one_off_estimation = 196657;
 		let binary_search_estimation = binary_search(one_off_estimation);
@@ -56,7 +56,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		).to.equal(binary_search_estimation);
 	});
 
-	it.skip("block gas limit over 5M", async function () {
+	it("block gas limit over 5M", async function () {
 		expect((await context.web3.eth.getBlock("latest")).gasLimit).to.be.above(5000000);
 	});
 
@@ -73,11 +73,11 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	});
 
 	// Testing the gas limit protection, hardcoded to 25M
-	it.skip("gas limit should increase on next block if gas fully used", async function () {
+	it("gas limit should increase on next block if gas fully used", async function () {
 		// TODO: fill a block with many heavy transaction to simulate lot of gas.
 	});
 
-	it.skip("eth_estimateGas for contract call", async function () {
+	it("eth_estimateGas for contract call", async function () {
 		// The value returned as an estimation by the evm with estimate mode ON.
 		let one_off_estimation = 21204;
 		let binary_search_estimation = binary_search(one_off_estimation);
@@ -93,7 +93,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		expect(await contract.methods.multiply(3).estimateGas()).to.equal(binary_search_estimation);
 	});
 
-	it.skip("eth_estimateGas without gas_limit should pass", async function () {
+	it("eth_estimateGas without gas_limit should pass", async function () {
 		// The value returned as an estimation by the evm with estimate mode ON.
 		let one_off_estimation = 21204;
 		let binary_search_estimation = binary_search(one_off_estimation);
@@ -108,7 +108,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		expect(await contract.methods.multiply(3).estimateGas()).to.equal(binary_search_estimation);
 	});
 
-	it.skip("eth_estimateGas should handle AccessList alias", async function () {
+	it("eth_estimateGas should handle AccessList alias", async function () {
 		// The value returned as an estimation by the evm with estimate mode ON.
 		// 4300 == 1900 for one key and 2400 for one storage.
 		let one_off_estimation = 196657 + 4300;
@@ -128,7 +128,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		expect(result).to.equal(context.web3.utils.numberToHex(binary_search_estimation));
 	});
 
-	it.skip("eth_estimateGas 0x0 gasPrice is equivalent to not setting one", async function () {
+	it("eth_estimateGas 0x0 gasPrice is equivalent to not setting one", async function () {
 		let result = (await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
