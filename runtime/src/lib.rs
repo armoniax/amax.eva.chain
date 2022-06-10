@@ -303,8 +303,8 @@ parameter_types! {
     pub const TechnicalMaxMembers: u32 = 30;
 }
 
-type TechnicalCommitteeInstance = pallet_collective::Instance1;
-impl pallet_collective::Config<TechnicalCommitteeInstance> for Runtime {
+type TechnicalCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
     type Origin = Origin;
     type Proposal = Call;
     type Event = Event;
