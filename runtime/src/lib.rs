@@ -362,7 +362,7 @@ construct_runtime!(
         Ethereum: pallet_ethereum = 31,
         BaseFee: pallet_base_fee = 32,
 
-        // Governance stuff
+        // Governance.
         TechnicalCommittee: pallet_collective::<Instance1> = 67,
         TechnicalCommitteeMembership: pallet_membership::<Instance1> = 68,
 
