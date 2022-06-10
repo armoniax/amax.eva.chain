@@ -135,3 +135,5 @@ try-runtime = [
     "pallet-transaction-payment/try-runtime",
     "pallet-ethereum/try-runtime",
 ]
+# When enabled, runtime will use manual-seal consensus instead of aura.
+manual-seal = []
