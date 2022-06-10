@@ -319,14 +319,13 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
     type WeightInfo = ();
 }
 
-pub type TechnicalCommitteeMembershipInstance = pallet_membership::Instance1;
-
-pub type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
     EnsureRoot<AccountId>,
-    pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCommitteeInstance, 2, 3>,
+    pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
 >;
 
-impl pallet_membership::Config<TechnicalCommitteeMembershipInstance> for Runtime {
+type TechnicalMembership = pallet_membership::Instance1;
+impl pallet_membership::Config<TechnicalMembership> for Runtime {
     type Event = Event;
     type AddOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
     type RemoveOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
