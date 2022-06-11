@@ -5,6 +5,7 @@ members = [
 
     # Runtime
     "runtime",
+    "runtime/constants",
 
     # Primitives
     "primitives/core",

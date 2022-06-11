@@ -60,6 +60,7 @@ pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier",
 pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 
 # Local
+amax-eva-runtime-constants = { path = "constants", default-features = false }
 primitives-core = { path = "../primitives/core", default-features = false }
 
 [build-dependencies]
@@ -86,7 +87,7 @@ std = [
     "sp-std/std",
     "sp-transaction-pool/std",
     "sp-version/std",
-    # Substrate FRAME
+    ## Substrate FRAME
     "frame-executive/std",
     "frame-support/std",
     "frame-system/std",
@@ -113,6 +114,7 @@ std = [
     "pallet-evm-precompile-simple/std",
     "pallet-evm-precompile-sha3fips/std",
     # Local
+    "amax-eva-runtime-constants/std",
     "primitives-core/std",
 ]
 runtime-benchmarks = [
