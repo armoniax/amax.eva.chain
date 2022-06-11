@@ -10,10 +10,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode};
 // Substrate
 use sp_api::impl_runtime_apis;
-use sp_core::{
-    crypto::{ByteArray, KeyTypeId},
-    OpaqueMetadata, H160, H256, U256,
-};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
@@ -157,7 +154,10 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
+    #[cfg(feature = "aura")]
     type OnTimestampSet = Aura;
+    #[cfg(feature = "manual-seal")]
+    type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -240,13 +240,15 @@ impl pallet_grandpa::Config for Runtime {
 
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
 impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(digests: I) -> Option<H160>
+    fn find_author<'a, I>(_digests: I) -> Option<H160>
     where
         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
     {
         // TODO change the implementation after bringing in the Session or related pallet to get
         // accountid.
-        if let Some(author_index) = F::find_author(digests) {
+        #[cfg(feature = "aura")]
+        if let Some(author_index) = F::find_author(_digests) {
+            use sp_core::crypto::ByteArray;
             let authority_id = Aura::authorities()[author_index as usize].clone();
             return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
         }
