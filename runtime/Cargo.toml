@@ -64,7 +64,9 @@ primitives-core = { path = "../primitives/core", default-features = false }
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 
 [features]
-default = ["std"]
+default = ["std", "aura"]
+aura = []
+manual-seal = []
 std = [
     # Parity
     "codec/std",
