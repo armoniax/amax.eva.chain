@@ -63,7 +63,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --all-targets --features runtime-benchmarks,try-runtime -- -D warning
+          args: --all --all-targets --features runtime-benchmarks,try-runtime -- -D warnings
 
   integration:
     name: Run integration tests
