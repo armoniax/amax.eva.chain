@@ -22,7 +22,7 @@ default = ["std"]
 std = [
     # Substrate
     "sp-runtime/std",
-    # Substrate FRAME
+    ## Substrate FRAME
     "frame-support/std",
     # Local
     "primitives-core/std",
