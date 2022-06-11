@@ -1,0 +1,37 @@
+[package]
+name = "amax-eva-rpc-trace"
+version = "0.1.0"
+edition = "2021"
+authors = ["Armonia Authors"]
+license = "GPL-3.0"
+description = "armonia multichain - eva child chain"
+
+[dependencies]
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.10", features = ["sync", "time"] }
+tracing = "0.1.25"
+
+# Parity
+ethereum = { version = "0.12.0", features = ["with-codec"] }
+ethereum-types = "0.13.1"
+jsonrpc-core = "18.0.0"
+
+# Substrate
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sc-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19" }
+
+# Frontier
+fc-db = { git = "https://github.com/alt-research/frontier", branch = "alt-polkadot-v0.9.19" }
+fc-rpc = { git = "https://github.com/alt-research/frontier", branch = "alt-polkadot-v0.9.19", features = ["rpc_binary_search_estimate"] }
+fp-rpc = { git = "https://github.com/alt-research/frontier", branch = "alt-polkadot-v0.9.19" }
+
+# Local
+amax-eva-client-evm-tracing = { path = "../../evm-tracing" }
+amax-eva-primitives-rpc = { path = "../../../primitives/rpc" }
+amax-eva-rpc-core-trace = { path = "../../rpc-core/trace" }
+amax-eva-rpc-core-types = { path = "../../rpc-core/types" }

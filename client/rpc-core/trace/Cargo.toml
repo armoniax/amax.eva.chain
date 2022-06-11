@@ -1,0 +1,20 @@
+[package]
+name = "amax-eva-rpc-core-trace"
+version = "0.1.0"
+edition = "2021"
+authors = ["Armonia Authors"]
+license = "GPL-3.0"
+description = "armonia multichain - eva child chain"
+
+[dependencies]
+futures = { version = "0.3.1", features = ["compat"] }
+serde = { version = "1.0", features = ["derive"] }
+
+# Parity
+ethereum-types = "0.13.1"
+jsonrpc-core = "18.0.0"
+jsonrpc-derive = "18.0.0"
+
+# Local
+amax-eva-client-evm-tracing = { path = "../../evm-tracing" }
+amax-eva-rpc-core-types = { path = "../types" }
