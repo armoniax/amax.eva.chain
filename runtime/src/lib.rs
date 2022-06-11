@@ -28,12 +28,13 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU128, ConstU32, ConstU8, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_PER_SECOND},
         IdentityFee,
     },
 };
+use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
@@ -234,7 +235,7 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 // ################################################################################################
-// EVM compatiblity.
+// EVM compatibility.
 // ################################################################################################
 
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
@@ -270,11 +271,11 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
-    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;
+    type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
 }
@@ -297,6 +298,46 @@ impl pallet_base_fee::Config for Runtime {
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
 }
 
+parameter_types! {
+    /// The maximum number of technical committee members.
+    pub const TechnicalMaxMembers: u32 = 30;
+}
+
+type TechnicalCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+    type Origin = Origin;
+    type Proposal = Call;
+    type Event = Event;
+    /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
+    /// Motions may end in fewer blocks if enough votes are cast to determine the result.
+    type MotionDuration = ConstU32<{ 3 * DAYS }>;
+    /// The maximum number of Proposals that can be open in the technical committee at once.
+    type MaxProposals = ConstU32<30>;
+    /// The maximum number of technical committee members.
+    type MaxMembers = TechnicalMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = ();
+}
+
+type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+    EnsureRoot<AccountId>,
+    pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
+>;
+
+type TechnicalMembership = pallet_membership::Instance1;
+impl pallet_membership::Config<TechnicalMembership> for Runtime {
+    type Event = Event;
+    type AddOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type RemoveOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type SwapOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type ResetOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type PrimeOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type MembershipInitialized = TechnicalCommittee;
+    type MembershipChanged = TechnicalCommittee;
+    type MaxMembers = TechnicalMaxMembers;
+    type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -307,8 +348,6 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
-        // Sudo (temporary).
-        Sudo: pallet_sudo = 255,
 
         // Monetary.
         Balances: pallet_balances = 10,
@@ -322,6 +361,13 @@ construct_runtime!(
         EVM: pallet_evm = 30,
         Ethereum: pallet_ethereum = 31,
         BaseFee: pallet_base_fee = 32,
+
+        // Governance.
+        TechnicalCommittee: pallet_collective::<Instance1> = 67,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 68,
+
+        // Sudo (temporary).
+        Sudo: pallet_sudo = 255,
     }
 );
 
