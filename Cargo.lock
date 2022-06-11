@@ -159,6 +159,7 @@ dependencies = [
 name = "amax-eva-runtime"
 version = "0.1.0"
 dependencies = [
+ "amax-eva-runtime-constants",
  "fp-evm",
  "fp-rpc",
  "fp-self-contained",
@@ -201,6 +202,15 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "amax-eva-runtime-constants"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "primitives-core",
+ "sp-runtime",
 ]
 
 [[package]]
