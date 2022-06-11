@@ -13,7 +13,8 @@ env:
     CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  lint:
+    name: Run lints
     strategy:
       matrix:
         platform: [ubuntu-latest]
@@ -44,7 +45,6 @@ jobs:
           components: rustfmt, clippy
 
       - name: Check Toml Format
-        shell: bash
         run: |
           if taplo --version &> /dev/null; then
             echo "taplo-cli is already installed"
@@ -63,4 +63,49 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --all-targets --features runtime-benchmarks,try-runtime -- -D warnings
+          args: --all --all-targets --features runtime-benchmarks,try-runtime -- -D warning
+
+  integration:
+    name: Run integration tests
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+        toolchain: [nightly-2022-06-01]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v3
+
+      - name: Cache Dependencies & Build Outputs
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: Build manual-seal client
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --locked --verbose --no-default-features --features manual-seal,rpc_binary_search_estimate
+
+      - name: Setup Node.js v10
+        uses: actions/setup-node@v3
+        with:
+          node-version: 10
+      - name: Install functional tests typescript
+        run: cd ts-tests && npm install
+      - name: Run functional tests
+        run: cd ts-tests && npm run build && npm run test
