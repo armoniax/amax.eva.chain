@@ -25,13 +25,13 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU128, ConstU32, ConstU8, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_PER_SECOND},
-        IdentityFee,
+        ConstantMultiplier, Weight,
     },
 };
-use frame_system::EnsureRoot;
+use frame_system::{limits, EnsureRoot};
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
@@ -44,17 +44,16 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
+pub use amax_eva_runtime_constants::{evm::*, fee::*, time::*};
 pub use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     OpaqueExtrinsic, Signature,
 };
 
-pub mod constants;
-use self::constants::time::*;
 mod evm_config;
 use self::evm_config::*;
 mod precompiles;
-use self::precompiles::FrontierPrecompiles;
+use self::precompiles::EvaPrecompiles;
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -82,16 +81,19 @@ pub fn native_version() -> sp_version::NativeVersion {
 // System && Utility.
 // ################################################################################################
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
+/// by  Operational  extrinsics.
+pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+/// We allow for 2 seconds of compute with a 6 second average block time.
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+/// The maximum block length is 5 MB.
+pub const MAXIMUM_BLOCK_LENGTH: u32 = 5 * 1024 * 1024;
 
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const BlockHashCount: BlockNumber = 2400;
-    /// We allow for 2 seconds of compute with a 6 second average block time.
-    pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-        ::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
-    pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-        ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+    pub BlockWeights: limits::BlockWeights = limits::BlockWeights::with_sensible_defaults(MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
+    pub BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(MAXIMUM_BLOCK_LENGTH, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
 }
 
@@ -144,7 +146,7 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
     /// The set code logic, just the default since we're not a parachain.
     type OnSetCode = ();
-    type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type MaxConsumers = ConstU32<16>;
 }
 
 parameter_types! {
@@ -171,25 +173,37 @@ impl pallet_sudo::Config for Runtime {
 // Monetary.
 // ################################################################################################
 
+parameter_types! {
+    pub const ExistentialDeposit: Balance = 0;
+    pub const MaxLocks: u32 = 50;
+    pub const MaxReserves: u32 = 50;
+}
+
 impl pallet_balances::Config for Runtime {
-    /// The type for recording an account's balance.
     type Balance = Balance;
     type DustRemoval = ();
-    /// The ubiquitous event type.
     type Event = Event;
-    type ExistentialDeposit = ConstU128<0>; // do not kill accounts when balances low.
+    type ExistentialDeposit = ExistentialDeposit; // do not kill accounts when balances low.
     type AccountStore = System;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-    type MaxLocks = ConstU32<50>;
-    type MaxReserves = ();
+    type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
     type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+    // TODO need to check byte fee with team
+    pub const TransactionByteFee: Balance = 1;
+    /// This value increases the priority of `Operational` transactions by adding
+    /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+    pub OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-    type OperationalFeeMultiplier = ConstU8<5>;
-    type WeightToFee = IdentityFee<Balance>;
-    type LengthToFee = IdentityFee<Balance>;
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
+    type WeightToFee = WeightToFee;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
 }
 
@@ -235,70 +249,8 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 // ################################################################################################
-// EVM compatibility.
+// Governance.
 // ################################################################################################
-
-pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(_digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        // TODO change the implementation after bringing in the Session or related pallet to get
-        // accountid.
-        #[cfg(feature = "aura")]
-        if let Some(author_index) = F::find_author(_digests) {
-            use sp_core::crypto::ByteArray;
-            let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
-        }
-        None
-    }
-}
-
-parameter_types! {
-    // TODO need to set chainid(for testnet version we will set 161)
-    pub const ChainId: u64 = 160;
-    // TODO need to check gaslimt with team
-    pub BlockGasLimit: U256 = U256::from(u32::max_value());
-    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
-}
-
-impl pallet_evm::Config for Runtime {
-    type FeeCalculator = FixedGasPrice;
-    type GasWeightMapping = GasWeightMapping;
-    type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-    type CallOrigin = EnsureAddressRoot<AccountId>;
-    type WithdrawOrigin = EnsureAddressNever<AccountId>;
-    type AddressMapping = IntoAddressMapping;
-    type Currency = Balances;
-    type Event = Event;
-    type PrecompilesType = FrontierPrecompiles<Self>;
-    type PrecompilesValue = PrecompilesValue;
-    type ChainId = ChainId;
-    type BlockGasLimit = BlockGasLimit;
-    type Runner = pallet_evm::runner::stack::Runner<Self>;
-    type OnChargeTransaction = ();
-    type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
-}
-
-impl pallet_ethereum::Config for Runtime {
-    type Event = Event;
-    type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
-}
-
-parameter_types! {
-    pub IsActive: bool = true;
-    // TODO need to check this with team
-    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-}
-
-impl pallet_base_fee::Config for Runtime {
-    type Event = Event;
-    type Threshold = BaseFeeThreshold;
-    type IsActive = IsActive;
-    type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
-}
 
 parameter_types! {
     /// The maximum number of technical committee members.
@@ -340,6 +292,72 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
     type WeightInfo = ();
 }
 
+// ################################################################################################
+// EVM compatibility.
+// ################################################################################################
+
+pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
+    fn find_author<'a, I>(_digests: I) -> Option<H160>
+    where
+        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+    {
+        // TODO change the implementation after bringing in the Session or related pallet to get
+        // accountid.
+        #[cfg(feature = "aura")]
+        if let Some(author_index) = F::find_author(_digests) {
+            use sp_core::crypto::ByteArray;
+            let authority_id = Aura::authorities()[author_index as usize].clone();
+            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
+        }
+        None
+    }
+}
+
+parameter_types! {
+    // TODO need to set chainid(for testnet version we will set 161)
+    pub const ChainId: u64 = 160;
+    // TODO need to check gaslimt with team
+    pub BlockGasLimit: U256 = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT / WEIGHT_PER_GAS);
+    pub PrecompilesValue: EvaPrecompiles<Runtime> = EvaPrecompiles::<_>::new();
+}
+
+impl pallet_evm::Config for Runtime {
+    type FeeCalculator = FixedGasPrice;
+    type GasWeightMapping = GasWeightMapping;
+    type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
+    type CallOrigin = EnsureAddressRoot<AccountId>;
+    type WithdrawOrigin = EnsureAddressNever<AccountId>;
+    type AddressMapping = IntoAddressMapping;
+    type Currency = Balances;
+    type Event = Event;
+    type PrecompilesType = EvaPrecompiles<Self>;
+    type PrecompilesValue = PrecompilesValue;
+    type ChainId = ChainId;
+    type BlockGasLimit = BlockGasLimit;
+    type Runner = pallet_evm::runner::stack::Runner<Self>;
+    type OnChargeTransaction = ();
+    type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
+}
+
+impl pallet_ethereum::Config for Runtime {
+    type Event = Event;
+    type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
+}
+
+parameter_types! {
+    pub IsActive: bool = true;
+    // TODO need to check this with team
+    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+}
+
+impl pallet_base_fee::Config for Runtime {
+    type Event = Event;
+    type Threshold = BaseFeeThreshold;
+    type IsActive = IsActive;
+    type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -352,21 +370,21 @@ construct_runtime!(
         Timestamp: pallet_timestamp = 1,
 
         // Monetary.
-        Balances: pallet_balances = 10,
-        TransactionPayment: pallet_transaction_payment = 11,
+        Balances: pallet_balances = 20,
+        TransactionPayment: pallet_transaction_payment = 21,
 
         // Consensus.
-        Aura: pallet_aura = 20,
-        Grandpa: pallet_grandpa = 21,
-
-        // Evm compatiblity.
-        EVM: pallet_evm = 30,
-        Ethereum: pallet_ethereum = 31,
-        BaseFee: pallet_base_fee = 32,
+        Aura: pallet_aura = 30,
+        Grandpa: pallet_grandpa = 31,
 
         // Governance.
-        TechnicalCommittee: pallet_collective::<Instance1> = 67,
-        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 68,
+        TechnicalCommittee: pallet_collective::<Instance1> = 50,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 51,
+
+        // Evm compatibility.
+        EVM: pallet_evm = 100,
+        Ethereum: pallet_ethereum = 101,
+        BaseFee: pallet_base_fee = 102,
 
         // Sudo (temporary).
         Sudo: pallet_sudo = 255,
