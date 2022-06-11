@@ -53,11 +53,11 @@ pub use primitives_core::{
 };
 
 pub mod constants;
-use constants::time::*;
+use self::constants::time::*;
 mod evm_config;
-use evm_config::*;
+use self::evm_config::*;
 mod precompiles;
-use precompiles::FrontierPrecompiles;
+use self::precompiles::FrontierPrecompiles;
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
