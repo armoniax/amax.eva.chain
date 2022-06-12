@@ -23,7 +23,11 @@ fn properties() -> Properties {
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
-    let accounts = generate_dev_accounts(10);
+    // 0 Alith
+    // 1 Baltathar
+    // 2 Charleth
+    // 3 Dorothy
+    let accounts = generate_dev_accounts(6);
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -39,14 +43,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
-                vec![
-                    accounts[0], // Alith
-                    accounts[1], // Baltathar
-                    accounts[2], // Charleth
-                    accounts[3], // Dorothy
-                    accounts[4],
-                    accounts[5],
-                ],
+                accounts.clone(),
                 true,
             )
         },
@@ -67,6 +64,10 @@ pub fn development_config() -> Result<ChainSpec, String> {
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
+    // 0 Alith
+    // 1 Baltathar
+    // 2 Charleth
+    // 3 Dorothy
     let accounts = generate_dev_accounts(10);
 
     Ok(ChainSpec::from_genesis(
@@ -83,18 +84,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
-                vec![
-                    accounts[0], // Alith
-                    accounts[1], // Baltathar
-                    accounts[2], // Charleth
-                    accounts[3], // Dorothy
-                    accounts[4],
-                    accounts[5],
-                    accounts[6],
-                    accounts[7],
-                    accounts[8],
-                    accounts[9],
-                ],
+                accounts.clone(),
                 true,
             )
         },
@@ -148,5 +138,7 @@ fn genesis(
         evm: Default::default(),
         ethereum: Default::default(),
         base_fee: Default::default(),
+        technical_committee: Default::default(),
+        technical_committee_membership: Default::default(),
     }
 }
