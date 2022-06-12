@@ -169,90 +169,89 @@ impl DefaultConfigurationValues for Cli {
 /// A copy implementation for RunCmd, but the generic type `DCV` in `CliConfiguration<DCV>` is
 /// `Cli`. Notice this implementation should be updated if the `CliConfiguration` implementation for
 /// `RunCmd` has changed.
-/// More exactly, the function which should be implemented for `Cli` is the one that be called in
-/// `create_configuration` function, while it's also overridden by `RunCmd`.
-/// Thus, the easiest way is to override all functions which are overridden for `RunCmd`.
-impl CliConfiguration<Self> for Cli {
+/// More exactly, the functions which are override by `sc_cli::RunCmd` for `CliConfiguration<DCV>`
+/// should be all override by `RunCmd` for `CliConfiguration<Cli>`.
+impl CliConfiguration<Cli> for RunCmd {
     fn shared_params(&self) -> &SharedParams {
-        self.run.base.shared_params()
+        self.base.shared_params()
     }
     fn import_params(&self) -> Option<&ImportParams> {
-        self.run.base.import_params()
+        self.base.import_params()
     }
     fn network_params(&self) -> Option<&NetworkParams> {
-        self.run.base.network_params()
+        self.base.network_params()
     }
     fn keystore_params(&self) -> Option<&KeystoreParams> {
-        self.run.base.keystore_params()
+        self.base.keystore_params()
     }
     fn offchain_worker_params(&self) -> Option<&OffchainWorkerParams> {
-        self.run.base.offchain_worker_params()
+        self.base.offchain_worker_params()
     }
     fn node_name(&self) -> Result<String> {
-        self.run.base.node_name()
+        self.base.node_name()
     }
     fn dev_key_seed(&self, is_dev: bool) -> Result<Option<String>> {
-        self.run.base.dev_key_seed(is_dev)
+        self.base.dev_key_seed(is_dev)
     }
     fn telemetry_endpoints(
         &self,
         chain_spec: &Box<dyn ChainSpec>,
     ) -> Result<Option<TelemetryEndpoints>> {
-        self.run.base.telemetry_endpoints(chain_spec)
+        self.base.telemetry_endpoints(chain_spec)
     }
     fn role(&self, is_dev: bool) -> Result<Role> {
-        self.run.base.role(is_dev)
+        self.base.role(is_dev)
     }
     fn force_authoring(&self) -> Result<bool> {
-        self.run.base.force_authoring()
+        self.base.force_authoring()
     }
     fn prometheus_config(
         &self,
         default_listen_port: u16,
         chain_spec: &Box<dyn ChainSpec>,
     ) -> Result<Option<PrometheusConfig>> {
-        self.run.base.prometheus_config(default_listen_port, chain_spec)
+        self.base.prometheus_config(default_listen_port, chain_spec)
     }
     fn disable_grandpa(&self) -> Result<bool> {
-        self.run.base.disable_grandpa()
+        self.base.disable_grandpa()
     }
     fn rpc_ws_max_connections(&self) -> Result<Option<usize>> {
-        self.run.base.rpc_ws_max_connections()
+        self.base.rpc_ws_max_connections()
     }
 
     fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
-        self.run.base.rpc_cors(is_dev)
+        self.base.rpc_cors(is_dev)
     }
     fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.run.base.rpc_http(default_listen_port)
+        self.base.rpc_http(default_listen_port)
     }
     fn rpc_ipc(&self) -> Result<Option<String>> {
-        self.run.base.rpc_ipc()
+        self.base.rpc_ipc()
     }
     fn rpc_ws(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.run.base.rpc_ws(default_listen_port)
+        self.base.rpc_ws(default_listen_port)
     }
     fn rpc_methods(&self) -> Result<sc_service::config::RpcMethods> {
-        self.run.base.rpc_methods()
+        self.base.rpc_methods()
     }
     fn rpc_max_payload(&self) -> Result<Option<usize>> {
-        self.run.base.rpc_max_payload()
+        self.base.rpc_max_payload()
     }
 
     fn ws_max_out_buffer_capacity(&self) -> Result<Option<usize>> {
-        self.run.base.ws_max_out_buffer_capacity()
+        self.base.ws_max_out_buffer_capacity()
     }
     fn transaction_pool(&self) -> Result<TransactionPoolOptions> {
-        self.run.base.transaction_pool()
+        self.base.transaction_pool()
     }
     fn max_runtime_instances(&self) -> Result<Option<usize>> {
-        self.run.base.max_runtime_instances()
+        self.base.max_runtime_instances()
     }
     fn runtime_cache_size(&self) -> Result<u8> {
-        self.run.base.runtime_cache_size()
+        self.base.runtime_cache_size()
     }
     fn base_path(&self) -> Result<Option<BasePath>> {
-        self.run.base.base_path()
+        self.base.base_path()
     }
 }
 

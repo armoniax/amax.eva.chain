@@ -248,7 +248,9 @@ pub fn run() -> sc_cli::Result<()> {
             .into()),
         None => {
             let runner = cli.create_runner_with_config(&cli.run.base, |cli, tokio_handle| {
-                SubstrateCli::create_configuration(cli, cli, tokio_handle)
+                // note it's `cli.run` not `cli.run.base` here, for `cli.run` is implemented by
+                // `CliConfiguration<Cli>`, for `CliConfiguration<()>`
+                SubstrateCli::create_configuration(cli, &cli.run, tokio_handle)
             })?;
             runner.run_node_until_exit(|config| async move {
                 service::build_full(config, &cli).map_err(sc_cli::Error::Service)
