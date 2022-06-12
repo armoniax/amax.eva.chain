@@ -4,8 +4,8 @@ members = [
     "node",
 
     # Runtime
-    "runtime/constants",
     "runtime/eva",
+    "runtime/eva/constants",
     "runtime/wall-e",
 
     # Primitives

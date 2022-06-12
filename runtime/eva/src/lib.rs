@@ -9,10 +9,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 // Substrate
 use sp_api::impl_runtime_apis;
-use sp_core::{
-    crypto::{ByteArray, KeyTypeId},
-    OpaqueMetadata, H160, H256, U256,
-};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
@@ -28,7 +25,7 @@ use sp_version::RuntimeVersion;
 use frame_support::{
     construct_runtime, parameter_types,
     traits::{FindAuthor, KeyOwnerProofSystem},
-    weights::{constants::RocksDbWeight, IdentityFee},
+    weights::constants::RocksDbWeight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
@@ -47,11 +44,8 @@ use primitives_core::{
     Signature,
 };
 
-use runtime_common::{
-    constants::{balances, consensus, ethereum as eth_const, system, time},
-    evm_config,
-    precompiles::FrontierPrecompiles,
-};
+use eva_runtime_constants::{balances, consensus, evm, system, time};
+use runtime_common::{constants::fee, evm_config, precompiles::FrontierPrecompiles};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -139,7 +133,10 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
+    #[cfg(feature = "aura")]
     type OnTimestampSet = Aura;
+    #[cfg(feature = "manual-seal")]
+    type OnTimestampSet = ();
     type MinimumPeriod = time::MinimumPeriod;
     type WeightInfo = ();
 }
@@ -171,8 +168,8 @@ impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     // TODO. need to check this value.
     type OperationalFeeMultiplier = balances::OperationalFeeMultiplier;
-    type WeightToFee = IdentityFee<Balance>;
-    type LengthToFee = IdentityFee<Balance>;
+    type WeightToFee = fee::WeightToFee;
+    type LengthToFee = fee::WeightToFee;
     type FeeMultiplierUpdate = ();
 }
 
@@ -225,7 +222,9 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
     {
         // TODO change the implementation after bringing in the Session or related pallet to get
         // accountid.
+        #[cfg(feature = "aura")]
         if let Some(author_index) = F::find_author(digests) {
+            use sp_core::crypto::ByteArray;
             let authority_id = Aura::authorities()[author_index as usize].clone();
             return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
         }
@@ -250,7 +249,7 @@ impl pallet_evm::Config for Runtime {
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
-    type BlockGasLimit = eth_const::BlockGasLimit;
+    type BlockGasLimit = evm::BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
@@ -264,8 +263,8 @@ impl pallet_ethereum::Config for Runtime {
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
     type Threshold = evm_config::BaseFeeThreshold;
-    type IsActive = eth_const::IsActive;
-    type DefaultBaseFeePerGas = eth_const::DefaultBaseFeePerGas;
+    type IsActive = evm::IsActive;
+    type DefaultBaseFeePerGas = evm::DefaultBaseFeePerGas;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

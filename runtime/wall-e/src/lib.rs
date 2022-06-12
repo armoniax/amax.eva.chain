@@ -48,7 +48,7 @@ use primitives_core::{
 };
 
 use runtime_common::{
-    constants::{balances, consensus, ethereum as eth_const, system, time},
+    constants::{balances, consensus, evm as eth_const, system, time},
     evm_config,
     precompiles::FrontierPrecompiles,
 };
@@ -250,7 +250,7 @@ impl pallet_evm::Config for Runtime {
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
-    type BlockGasLimit = eth_const::BlockGasLimit;
+    type BlockGasLimit = evm::BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
@@ -264,8 +264,8 @@ impl pallet_ethereum::Config for Runtime {
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
     type Threshold = evm_config::BaseFeeThreshold;
-    type IsActive = eth_const::IsActive;
-    type DefaultBaseFeePerGas = eth_const::DefaultBaseFeePerGas;
+    type IsActive = evm::IsActive;
+    type DefaultBaseFeePerGas = evm::DefaultBaseFeePerGas;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

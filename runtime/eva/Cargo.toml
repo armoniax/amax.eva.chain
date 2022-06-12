@@ -57,13 +57,16 @@ pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
 
+eva-runtime-constants = { path = "./constants", default-features = false }
 runtime-common = { path = "../common", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 
 [features]
-default = ["std"]
+default = ["std", "aura"]
+aura = []
+manual-seal = []
 std = [
     # Parity
     "codec/std",
@@ -105,6 +108,7 @@ std = [
     # Local
     "primitives-core/std",
 
+    "eva-runtime-constants/std",
     "runtime-common/std",
 ]
 runtime-benchmarks = [

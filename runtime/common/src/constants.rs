@@ -23,6 +23,28 @@ pub mod balances {
     }
 }
 
+/// Currency constants.
+pub mod currency {
+    use primitives_core::Balance;
+
+    // The decimal for 1 token is 18.
+    pub const UNITS: Balance = 1_000_000_000_000_000_000;
+    // we assume one unit value to a dollars.
+    pub const DOLLARS: Balance = UNITS;
+    pub const CENTS: Balance = DOLLARS / 100;
+    pub const MILLICENTS: Balance = CENTS / 1_000;
+}
+
+/// Fee-related constants.
+pub mod fee {
+    use frame_support::weights::IdentityFee;
+    use primitives_core::Balance;
+
+    /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
+    /// node's balance type.
+    pub type WeightToFee = IdentityFee<Balance>;
+}
+
 /// System constructs
 pub mod system {
     use super::*;
@@ -68,7 +90,8 @@ pub mod time {
     }
 }
 
-pub mod ethereum {
+/// EVM-related constants.
+pub mod evm {
     use super::*;
     // TODO need to check gaslimt with team
     parameter_types! {
@@ -78,4 +101,16 @@ pub mod ethereum {
         pub IsActive: bool = true;
         pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
     }
+    use frame_support::weights::constants::WEIGHT_PER_SECOND;
+
+    /// From ** MOONBEAM **
+    /// Current approximation of the gas/s consumption considering
+    /// EVM execution over compiled WASM (on 4.4Ghz CPU).
+    /// Given the 500ms Weight, from which 75% only are used for transactions,
+    /// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~= 15_000_000.
+    pub const GAS_PER_SECOND: u64 = 40_000_000;
+
+    /// Approximate ratio of the amount of Weight per Gas.
+    /// u64 works for approximations because Weight is a very small unit compared to gas.
+    pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
 }
