@@ -25,7 +25,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU16, ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_PER_SECOND},
         ConstantMultiplier, Weight,
@@ -44,7 +44,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
-pub use amax_eva_runtime_constants::{evm::*, fee::*, time::*};
+pub use amax_eva_runtime_constants::{currency::*, evm::*, fee::*, time::*};
 pub use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     OpaqueExtrinsic, Signature,
@@ -161,6 +161,30 @@ impl pallet_timestamp::Config for Runtime {
     #[cfg(feature = "manual-seal")]
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+parameter_types! {
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub const MultisigDepositBase: Balance = deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const MultisigDepositFactor: Balance = deposit(0, 32);
+}
+
+impl pallet_utility::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type Currency = Balances;
+    type DepositBase = MultisigDepositBase;
+    type DepositFactor = MultisigDepositFactor;
+    type MaxSignatories = ConstU16<100>;
     type WeightInfo = ();
 }
 
@@ -368,6 +392,8 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
+        Utility: pallet_utility = 2,
+        Multisig: pallet_multisig = 3,
 
         // Monetary.
         Balances: pallet_balances = 20,

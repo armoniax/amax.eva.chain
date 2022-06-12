@@ -36,6 +36,11 @@ pub mod currency {
     pub const CENTS: Balance = UNITS / 30_000;
     pub const GRAND: Balance = CENTS * 100_000;
     pub const MILLICENTS: Balance = CENTS / 1_000;
+
+    // TODO: need to design
+    pub const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+    }
 }
 
 /// Fee-related constants.
