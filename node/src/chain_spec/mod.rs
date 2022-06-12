@@ -2,7 +2,7 @@
 pub mod eva;
 pub mod wall_e;
 
-mod key_helper;
+pub(crate) mod key_helper;
 
 use sc_chain_spec::ChainSpec;
 
