@@ -163,6 +163,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "tiny-bip39",
  "tiny-hderive",
+ "tokio",
  "try-runtime-cli",
  "wall-e-runtime",
 ]

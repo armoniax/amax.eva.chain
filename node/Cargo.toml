@@ -21,6 +21,7 @@ futures = "0.3"
 log = "0.4"
 tiny-bip39 = "0.8"
 tiny-hderive = "0.3.0"
+tokio = { version = "1.17.0", features = ["signal", "rt-multi-thread", "parking_lot"] }
 
 # Parity
 jsonrpsee = { version = "0.13.1", features = ["server", "macros"] }

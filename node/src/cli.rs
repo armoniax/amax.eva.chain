@@ -5,8 +5,10 @@ use sc_cli::{
     KeystoreParams, NetworkParams, OffchainWorkerParams, Result, Role, Runner, SharedParams,
     SubstrateCli,
 };
-use sc_service::{config::PrometheusConfig, BasePath, TransactionPoolOptions};
+use sc_service::{config::PrometheusConfig, BasePath, Configuration, TransactionPoolOptions};
 use sc_telemetry::TelemetryEndpoints;
+
+use crate::chain_spec::IdentifyVariant;
 
 /// Armonia Eva Node CLI.
 #[derive(Debug, clap::Parser)]
@@ -110,46 +112,53 @@ pub enum Subcommand {
     TryRuntime,
 }
 
-#[derive(Copy, Clone)]
-enum ChainNetworkType {
-    Dev,
-    Testnet,
-    Mainnet,
-}
-
-static mut CHAIN_NETWORK_TYPE: ChainNetworkType = ChainNetworkType::Mainnet;
-fn set_chain_network_type(network_type: ChainNetworkType) {
-    // this is safe, for this function should only be called in `create_runner_for_run_cmd`.
+static mut GLOBAL_CHAIN_SPEC: Option<Box<dyn ChainSpec>> = None;
+pub(crate) fn set_chain_spec(chain_spec: Box<dyn ChainSpec>) {
+    // this is safe, for this function should only be called in `load_spec`.
     unsafe {
-        CHAIN_NETWORK_TYPE = network_type;
+        GLOBAL_CHAIN_SPEC = Some(chain_spec);
     }
 }
-fn get_chain_network_type() -> ChainNetworkType {
+pub(crate) fn get_chain_spec() -> Option<&'static Box<dyn ChainSpec>> {
     // this is safe, for this function is not written when called.
-    unsafe { CHAIN_NETWORK_TYPE }
+    unsafe { GLOBAL_CHAIN_SPEC.as_ref() }
 }
 
 impl DefaultConfigurationValues for Cli {
     fn p2p_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev => 30333,
-            ChainNetworkType::Mainnet => 9922,
-            ChainNetworkType::Testnet => 19922,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9922
         }
+        if chain_spec.is_wall_e() {
+            return 19922
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9944,
-            ChainNetworkType::Testnet => 19944,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9944
         }
+        if chain_spec.is_wall_e() {
+            return 19944
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_http_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9933,
-            ChainNetworkType::Testnet => 19933,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9933
         }
+        if chain_spec.is_wall_e() {
+            return 19933
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn prometheus_listen_port() -> u16 {
@@ -248,30 +257,19 @@ impl CliConfiguration<Self> for Cli {
 }
 
 impl Cli {
-    /// Build a runner based on `RunCmd`.
-    /// This function is same as `create_runner` in `SubstrateCli`, but it just uses for `RunCmd`.
-    pub fn create_runner_for_run_cmd(&self, command: &RunCmd) -> Result<Runner<Self>> {
+    /// Build a runner with the config that is generated from outside.
+    /// This function is same as `create_runner` in `SubstrateCli`, but it generate the config from
+    /// the function closure.
+    pub fn create_runner_with_config<T: CliConfiguration<()>>(
+        &self,
+        command: &T,
+        f: impl Fn(&Self, tokio::runtime::Handle) -> Result<Configuration>,
+    ) -> Result<Runner<Self>> {
         let tokio_runtime = build_runtime()?;
-        // a hacky way to set network type directly.
-        let is_dev = self.is_dev()?;
-        let chain_id = self.chain_id(is_dev)?;
-        let chain_spec = self.load_spec(&chain_id)?;
-        match chain_spec.id() {
-            "dev" | "local_testnet" => set_chain_network_type(ChainNetworkType::Dev),
-            // TODO add mainnet and testnet
-            _ => set_chain_network_type(ChainNetworkType::Testnet),
-        }
+        // we use outside function to generate config
+        let config = f(&self, tokio_runtime.handle().clone())?;
 
-        // we use our custom configuration (`Self`) to replace `RunCmd`'s configuration.
-        let config = CliConfiguration::<Self>::create_configuration(
-            self,
-            self,
-            tokio_runtime.handle().clone(),
-        )?;
-
-        command
-            .base
-            .init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
+        command.init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
         Runner::new(config, tokio_runtime)
     }
 }

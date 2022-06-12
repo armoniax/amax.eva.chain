@@ -36,15 +36,32 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
-        Ok(match id {
-            "" | "wall-e-dev" | "dev" => Box::new(chain_spec::wall_e::development_config()?),
-            "wall-e-local" => Box::new(chain_spec::wall_e::local_testnet_config()?),
-            "eva-dev" => Box::new(chain_spec::eva::development_config()?),
-            "eva-local" => Box::new(chain_spec::eva::local_testnet_config()?),
-            path => Box::new(chain_spec::wall_e::ChainSpec::from_json_file(
-                std::path::PathBuf::from(path),
-            )?),
-        })
+        let (spec1, spec2): (Box<dyn ChainSpec>, Box<dyn ChainSpec>) = match id {
+            "" | "wall-e-dev" | "dev" => {
+                let spec = chain_spec::wall_e::development_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "wall-e-local" => {
+                let spec = chain_spec::wall_e::local_testnet_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "eva-dev" => {
+                let spec = chain_spec::eva::development_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "eva-local" => {
+                let spec = chain_spec::eva::local_testnet_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            path => {
+                let spec =
+                    chain_spec::wall_e::ChainSpec::from_json_file(std::path::PathBuf::from(path))?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+        };
+        // a hacky way to set network type directly.
+        crate::cli::set_chain_spec(spec2);
+        Ok(spec1)
     }
 
     fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
@@ -215,18 +232,12 @@ pub fn run() -> sc_cli::Result<()> {
                     .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
             if chain_spec.is_eva() {
                 return runner.async_run(|config| {
-                    Ok((
-                        cmd.run::<eva_runtime::Block, EvaExecutor>(config),
-                        task_manager,
-                    ))
+                    Ok((cmd.run::<eva_runtime::Block, EvaExecutor>(config), task_manager))
                 })
             }
             if chain_spec.is_wall_e() {
                 return runner.async_run(|config| {
-                    Ok((
-                        cmd.run::<wall_e_runtime::Block, WallEExecutor>(config),
-                        task_manager,
-                    ))
+                    Ok((cmd.run::<wall_e_runtime::Block, WallEExecutor>(config), task_manager))
                 })
             }
             Err("All runtime type should be captured".into())
@@ -236,7 +247,9 @@ pub fn run() -> sc_cli::Result<()> {
         	You can enable it with `--features try-runtime`."
             .into()),
         None => {
-            let runner = cli.create_runner_for_run_cmd(&cli.run)?;
+            let runner = cli.create_runner_with_config(&cli.run.base, |cli, tokio_handle| {
+                SubstrateCli::create_configuration(cli, cli, tokio_handle)
+            })?;
             runner.run_node_until_exit(|config| async move {
                 service::build_full(config, &cli).map_err(sc_cli::Error::Service)
             })
