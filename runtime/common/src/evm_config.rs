@@ -4,7 +4,7 @@ use sp_runtime::Permill;
 // Substrate FRAME
 use frame_support::weights::Weight;
 // Local
-use amax_eva_runtime_constants::evm::WEIGHT_PER_GAS;
+use crate::constants::evm::WEIGHT_PER_GAS;
 
 pub struct FixedGasPrice;
 impl pallet_evm::FeeCalculator for FixedGasPrice {
