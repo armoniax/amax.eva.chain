@@ -170,75 +170,8 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
                 return Ok(ext.into());
             }
         }
-
-        // let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
-        //     self.client.as_ref(),
-        //     acc[1].clone(),
-        //     runtime::SystemCall::remark { remark: vec![] }.into(),
-        //     nonce,
-        // )
-        // .into();
-
-        // Ok(extrinsic)
     }
 }
-/*
-/// Create a transaction using the given `call`.
-///
-/// Note: Should only be used for benchmarking.
-pub fn create_benchmark_extrinsic(
-    client: &Client,
-    sender: ecdsa::Pair,
-    call: runtime::Call,
-    nonce: u32,
-) -> runtime::UncheckedExtrinsic {
-    let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
-    let best_hash = client.chain_info().best_hash;
-    let best_block = client.chain_info().best_number;
-
-    let period = runtime::BlockHashCount::get()
-        .checked_next_power_of_two()
-        .map(|c| c / 2)
-        .unwrap_or(2) as u64;
-    let extra: runtime::SignedExtra = (
-        frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-        frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
-        frame_system::CheckTxVersion::<runtime::Runtime>::new(),
-        frame_system::CheckGenesis::<runtime::Runtime>::new(),
-        frame_system::CheckEra::<runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
-            period,
-            best_block.saturated_into(),
-        )),
-        frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
-        frame_system::CheckWeight::<runtime::Runtime>::new(),
-        pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
-    );
-
-    let raw_payload = runtime::SignedPayload::from_raw(
-        call.clone(),
-        extra.clone(),
-        (
-            (),
-            runtime::VERSION.spec_version,
-            runtime::VERSION.transaction_version,
-            genesis_hash,
-            best_hash,
-            (),
-            (),
-            (),
-        ),
-    );
-    let signature = raw_payload.using_encoded(|e| sender.sign(e));
-
-    let signed = get_account_id_from_pair(sender).expect("must can generate account_id");
-    runtime::UncheckedExtrinsic::new_signed(
-        call,
-        signed,
-        runtime::Signature::from(signature),
-        extra,
-    )
-}
-*/
 /// Generates inherent data for the `benchmark overhead` command.
 ///
 /// Note: Should only be used for benchmarking.

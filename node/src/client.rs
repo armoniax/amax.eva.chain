@@ -185,18 +185,6 @@ macro_rules! with_client {
 	}
 }
 
-impl Client {
-    pub fn chain_info(&self) -> Info<Block> {
-        with_client! {
-            self,
-            client,
-            {
-                client.chain_info()
-            }
-        }
-    }
-}
-
 impl UsageProvider<Block> for Client {
     fn usage_info(&self) -> sc_client_api::ClientInfo<Block> {
         with_client! {
