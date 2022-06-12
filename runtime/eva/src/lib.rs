@@ -24,9 +24,10 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{FindAuthor, KeyOwnerProofSystem},
+    traits::{EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::constants::RocksDbWeight,
 };
+use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
@@ -44,8 +45,8 @@ use primitives_core::{
     Signature,
 };
 
-use eva_runtime_constants::{balances, consensus, evm, system, time};
-use runtime_common::{constants::fee, evm_config, precompiles::FrontierPrecompiles};
+use eva_runtime_constants::{balances, consensus, evm, fee, governance, system, time};
+use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -211,7 +212,45 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 // ################################################################################################
-// EVM compatiblity.
+// Governance.
+// ################################################################################################
+type TechnicalCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+    type Origin = Origin;
+    type Proposal = Call;
+    type Event = Event;
+    /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
+    /// Motions may end in fewer blocks if enough votes are cast to determine the result.
+    type MotionDuration = governance::MotionDuration;
+    /// The maximum number of Proposals that can be open in the technical committee at once.
+    type MaxProposals = governance::MaxProposals;
+    type MaxMembers = governance::TechnicalMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = ();
+}
+
+/// 2/3 vote right for Technical members.
+type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+    EnsureRoot<AccountId>,
+    pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
+>;
+
+type TechnicalMembership = pallet_membership::Instance1;
+impl pallet_membership::Config<TechnicalMembership> for Runtime {
+    type Event = Event;
+    type AddOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type RemoveOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type SwapOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type ResetOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type PrimeOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type MembershipInitialized = TechnicalCommittee;
+    type MembershipChanged = TechnicalCommittee;
+    type MaxMembers = governance::TechnicalMaxMembers;
+    type WeightInfo = ();
+}
+
+// ################################################################################################
+// EVM compatibility.
 // ################################################################################################
 
 pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
@@ -277,8 +316,6 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
-        // Sudo (temporary).
-        Sudo: pallet_sudo = 255,
 
         // Monetary.
         Balances: pallet_balances = 10,
@@ -288,10 +325,17 @@ construct_runtime!(
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
 
-        // Evm compatiblity.
-        EVM: pallet_evm = 30,
-        Ethereum: pallet_ethereum = 31,
-        BaseFee: pallet_base_fee = 32,
+        // Governance.
+        TechnicalCommittee: pallet_collective::<Instance1> = 30,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 31,
+
+        // Evm compatibility.
+        EVM: pallet_evm = 100,
+        Ethereum: pallet_ethereum = 101,
+        BaseFee: pallet_base_fee = 102,
+
+        // Sudo (temporary).
+        Sudo: pallet_sudo = 255,
     }
 );
 

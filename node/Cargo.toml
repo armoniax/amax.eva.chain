@@ -86,8 +86,8 @@ fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 primitives-core = { path = "../primitives/core" }
 runtime-common = { path = "../runtime/common" }
 
-eva-runtime = { path = "../runtime/eva" }
-wall-e-runtime = { path = "../runtime/wall-e" }
+eva-runtime = { path = "../runtime/eva", default-features = false, features = ["std"] }
+wall-e-runtime = { path = "../runtime/wall-e", default-features = false, features = ["std"] }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
@@ -97,10 +97,12 @@ default = ["aura"]
 aura = [
     "sc-consensus-aura",
     "eva-runtime/aura",
+    "wall-e-runtime/aura",
 ]
 manual-seal = [
     "sc-consensus-manual-seal",
     "eva-runtime/manual-seal",
+    "wall-e-runtime/manual-seal",
 ]
 rpc_binary_search_estimate = ["fc-rpc/rpc_binary_search_estimate"]
 runtime-benchmarks = [

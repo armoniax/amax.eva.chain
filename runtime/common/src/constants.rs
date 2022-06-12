@@ -1,6 +1,8 @@
 //! A set of constant values used in substrate runtime.
 
-use frame_support::{parameter_types, traits::ConstU32, weights::constants::WEIGHT_PER_SECOND};
+pub use frame_support::{parameter_types, traits::ConstU32};
+
+use frame_support::weights::constants::WEIGHT_PER_SECOND;
 use sp_core::U256;
 use sp_runtime::Perbill;
 
@@ -45,7 +47,7 @@ pub mod fee {
     pub type WeightToFee = IdentityFee<Balance>;
 }
 
-/// System constructs
+/// System constants.
 pub mod system {
     use super::*;
     use primitives_core::BlockNumber;
@@ -88,6 +90,17 @@ pub mod time {
     parameter_types! {
         pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
     }
+}
+
+/// Governance constants.
+pub mod governance {
+    use super::*;
+    parameter_types! {
+        /// The maximum number of technical committee members.
+        pub const TechnicalMaxMembers: u32 = 30;
+    }
+    /// The maximum number of technical committee members.
+    pub type MaxProposals = ConstU32<32>;
 }
 
 /// EVM-related constants.

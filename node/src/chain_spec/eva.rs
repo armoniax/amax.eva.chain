@@ -117,10 +117,6 @@ fn genesis(
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(root_key),
-        },
         // Monetary.
         balances: BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 80.
@@ -134,11 +130,15 @@ fn genesis(
         grandpa: GrandpaConfig {
             authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
         },
+        technical_committee: Default::default(),
+        technical_committee_membership: Default::default(),
         // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
         base_fee: Default::default(),
-        technical_committee: Default::default(),
-        technical_committee_membership: Default::default(),
+        sudo: SudoConfig {
+            // Assign network admin rights.
+            key: Some(root_key),
+        },
     }
 }
