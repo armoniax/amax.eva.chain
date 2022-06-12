@@ -107,6 +107,7 @@ dependencies = [
  "async-trait",
  "clap",
  "eva-runtime",
+ "eva-runtime-constants",
  "fc-consensus",
  "fc-db",
  "fc-mapping-sync",
@@ -166,6 +167,7 @@ dependencies = [
  "tokio",
  "try-runtime-cli",
  "wall-e-runtime",
+ "wall-e-runtime-constants",
 ]
 
 [[package]]

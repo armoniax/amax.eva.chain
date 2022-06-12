@@ -88,7 +88,9 @@ primitives-core = { path = "../primitives/core" }
 runtime-common = { path = "../runtime/common" }
 
 eva-runtime = { path = "../runtime/eva", default-features = false, features = ["std"] }
+eva-runtime-constants = { path = "../runtime/eva/constants" }
 wall-e-runtime = { path = "../runtime/wall-e", default-features = false, features = ["std"] }
+wall-e-runtime-constants = { path = "../runtime/wall-e/constants" }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }

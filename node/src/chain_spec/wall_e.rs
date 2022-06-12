@@ -1,8 +1,9 @@
 // Substrate
 use sc_service::{ChainType, Properties};
 // Local
-use primitives_core::AccountId;
+use primitives_core::{AccountId, Balance};
 use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
+use wall_e_runtime_constants::currency::UNITS;
 
 use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 
@@ -32,6 +33,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         "wall_e_dev",
         ChainType::Development,
         move || {
+            let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
             genesis(
                 wasm_binary,
                 // Initial PoA authorities
@@ -39,14 +41,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
-                vec![
-                    accounts[0], // Alith
-                    accounts[1], // Baltathar
-                    accounts[2], // Charleth
-                    accounts[3], // Dorothy
-                    accounts[4],
-                    accounts[5],
-                ],
+                endowed,
                 true,
             )
         },
@@ -76,6 +71,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         "wall_e_local_testnet",
         ChainType::Local,
         move || {
+            let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
             genesis(
                 wasm_binary,
                 // Initial PoA authorities
@@ -83,18 +79,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
-                vec![
-                    accounts[0], // Alith
-                    accounts[1], // Baltathar
-                    accounts[2], // Charleth
-                    accounts[3], // Dorothy
-                    accounts[4],
-                    accounts[5],
-                    accounts[6],
-                    accounts[7],
-                    accounts[8],
-                    accounts[9],
-                ],
+                endowed,
                 true,
             )
         },
@@ -117,7 +102,7 @@ fn genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(AuraId, GrandpaId)>,
     root_key: AccountId,
-    endowed_accounts: Vec<AccountId>,
+    endowed: Vec<(AccountId, Balance)>,
     _enable_println: bool,
 ) -> GenesisConfig {
     use wall_e_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
@@ -128,10 +113,7 @@ fn genesis(
             code: wasm_binary.to_vec(),
         },
         // Monetary.
-        balances: BalancesConfig {
-            // Configure endowed accounts with initial balance of 1 << 80.
-            balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 80)).collect(),
-        },
+        balances: BalancesConfig { balances: endowed },
         transaction_payment: Default::default(),
         // Consesnsus.
         aura: AuraConfig {
