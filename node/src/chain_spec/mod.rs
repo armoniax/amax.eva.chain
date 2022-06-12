@@ -22,6 +22,6 @@ impl IdentifyVariant for Box<dyn ChainSpec> {
     }
 
     fn is_wall_e(&self) -> bool {
-        self.id().starts_with("wall-e")
+        self.id().starts_with("wall_e")
     }
 }
