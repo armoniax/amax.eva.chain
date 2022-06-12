@@ -50,11 +50,11 @@ impl sc_executor::NativeExecutionDispatch for WallEExecutor {
     type ExtendHostFunctions = ();
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        eva_runtime::api::dispatch(method, data)
+        wall_e_runtime::api::dispatch(method, data)
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        eva_runtime::native_version()
+        wall_e_runtime::native_version()
     }
 }
 
