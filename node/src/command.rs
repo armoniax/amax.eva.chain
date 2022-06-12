@@ -200,32 +200,46 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::Benchmark) => Err("Benchmarking wasn't enabled when building the node. \
         	You can enable it with `--features runtime-benchmarks`."
             .into()),
-        // #[cfg(feature = "try-runtime")]
-        // Some(Subcommand::TryRuntime(cmd)) => {
-        //     let runner = cli.create_runner(cmd)?;
-        //     runner.async_run(|config| {
-        //         // we don't need any of the components of new_partial, just a runtime, or a task
-        //         // manager to do `async_run`.
-        //         let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-        //         let task_manager =
-        //             sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
-        //                 .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
-        //         Ok((
-        //             cmd.run::<amax_eva_runtime::Block, service::ExecutorDispatch>(config),
-        //             task_manager,
-        //         ))
-        //     })
-        // },
-        // #[cfg(not(feature = "try-runtime"))]
-        // Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
-        // 	You can enable it with `--features try-runtime`."
-        //     .into()),
+        #[cfg(feature = "try-runtime")]
+        Some(Subcommand::TryRuntime(cmd)) => {
+            use crate::{
+                chain_spec::IdentifyVariant,
+                client::{EvaExecutor, WallEExecutor},
+            };
+
+            let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+            let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
+            let task_manager =
+                sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
+                    .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+            if chain_spec.is_eva() {
+                return runner.async_run(|config| {
+                    Ok((
+                        cmd.run::<eva_runtime::Block, EvaExecutor>(config),
+                        task_manager,
+                    ))
+                })
+            }
+            if chain_spec.is_wall_e() {
+                return runner.async_run(|config| {
+                    Ok((
+                        cmd.run::<wall_e_runtime::Block, WallEExecutor>(config),
+                        task_manager,
+                    ))
+                })
+            }
+            Err("All runtime type should be captured".into())
+        },
+        #[cfg(not(feature = "try-runtime"))]
+        Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+        	You can enable it with `--features try-runtime`."
+            .into()),
         None => {
             let runner = cli.create_runner_for_run_cmd(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
                 service::build_full(config, &cli).map_err(sc_cli::Error::Service)
             })
         },
-        _ => unimplemented!(""),
     }
 }
