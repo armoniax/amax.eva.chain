@@ -2,7 +2,7 @@
 use sc_service::{ChainType, Properties};
 // Local
 use primitives_core::{AccountId, Balance};
-use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
+use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, SessionKeys, WASM_BINARY};
 use wall_e_runtime_constants::currency::UNITS;
 
 use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
@@ -34,15 +34,18 @@ pub fn development_config() -> Result<ChainSpec, String> {
         ChainType::Development,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
+            let alice = authority_keys_from_seed("Alice");
             genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice")],
+                vec![
+                    // Alith with Alice
+                    (accounts[0], alice.0, alice.1),
+                ],
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
                 endowed,
-                true,
             )
         },
         // Bootnodes
@@ -72,15 +75,21 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         ChainType::Local,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
+            let alice = authority_keys_from_seed("Alice");
+            let bob = authority_keys_from_seed("Bob");
             genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
+                vec![
+                    // Alith with Alice
+                    (accounts[0], alice.0, alice.1),
+                    // Baltathar with Bob
+                    (accounts[1], bob.0, bob.1),
+                ],
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
                 endowed,
-                true,
             )
         },
         // Bootnodes
@@ -97,15 +106,18 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     ))
 }
 
+fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+    SessionKeys { aura, grandpa }
+}
+
 /// Configure initial storage state for FRAME modules.
 fn genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AuraId, GrandpaId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
     root_key: AccountId,
     endowed: Vec<(AccountId, Balance)>,
-    _enable_println: bool,
 ) -> GenesisConfig {
-    use wall_e_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
+    use wall_e_runtime::{BalancesConfig, SessionConfig, SudoConfig, SystemConfig};
     GenesisConfig {
         // System && Utility.
         system: SystemConfig {
@@ -116,11 +128,13 @@ fn genesis(
         balances: BalancesConfig { balances: endowed },
         transaction_payment: Default::default(),
         // Consesnsus.
-        aura: AuraConfig {
-            authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-        },
-        grandpa: GrandpaConfig {
-            authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
+        aura: Default::default(),
+        grandpa: Default::default(),
+        session: SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| (x.0.clone(), x.0.clone(), session_keys(x.1.clone(), x.2.clone())))
+                .collect::<Vec<_>>(),
         },
         technical_committee: Default::default(),
         technical_committee_membership: Default::default(),

@@ -14,7 +14,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        PostDispatchInfoOf,
+        OpaqueKeys, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
     ApplyExtrinsicResult, ConsensusEngineId, Permill,
@@ -45,7 +45,9 @@ use primitives_core::{
     Signature,
 };
 
-use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
+use runtime_common::{
+    evm_config, pallets::authorities as pallet_authorities, precompiles::FrontierPrecompiles,
+};
 use wall_e_runtime_constants::{balances, consensus, evm, fee, governance, system, time};
 
 // To learn more about runtime versioning and what each of the following value means:
@@ -183,6 +185,24 @@ impl_opaque_keys! {
         pub aura: Aura,
         pub grandpa: Grandpa,
     }
+}
+
+impl pallet_session::Config for Runtime {
+    type Event = Event;
+    type ValidatorId = Self::AccountId;
+    type ValidatorIdOf = Authorities;
+    type ShouldEndSession = pallet_session::PeriodicSessions<consensus::Period, consensus::Period>;
+    type NextSessionRotation =
+        pallet_session::PeriodicSessions<consensus::Period, consensus::Period>;
+    type SessionManager = Authorities;
+    type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = SessionKeys;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_authorities::Config for Runtime {
+    type Event = Event;
+    type MaxAuthorities = consensus::MaxAuthorities;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -324,6 +344,8 @@ construct_runtime!(
         // Consensus.
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
+        Session: pallet_session = 22,
+        Authorities: pallet_authorities = 23,
 
         // Governance.
         TechnicalCommittee: pallet_collective::<Instance1> = 30,

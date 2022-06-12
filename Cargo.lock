@@ -5677,12 +5677,15 @@ dependencies = [
  "pallet-evm-precompile-modexp",
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
+ "pallet-session",
  "parity-scale-codec",
  "primitives-core",
+ "scale-info",
  "sp-consensus-aura",
  "sp-core",
  "sp-finality-grandpa",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 
@@ -8698,6 +8701,7 @@ dependencies = [
  "pallet-evm",
  "pallet-grandpa",
  "pallet-membership",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
