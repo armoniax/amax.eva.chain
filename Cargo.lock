@@ -8678,6 +8678,14 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+ "wall-e-runtime-constants",
+]
+
+[[package]]
+name = "wall-e-runtime-constants"
+version = "0.1.0"
+dependencies = [
+ "runtime-common",
 ]
 
 [[package]]

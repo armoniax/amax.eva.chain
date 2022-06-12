@@ -7,6 +7,7 @@ members = [
     "runtime/eva",
     "runtime/eva/constants",
     "runtime/wall-e",
+    "runtime/wall-e/constants",
 
     # Primitives
     "primitives/core",
