@@ -119,6 +119,7 @@ pub(crate) fn set_chain_spec(chain_spec: Box<dyn ChainSpec>) {
         GLOBAL_CHAIN_SPEC = Some(chain_spec);
     }
 }
+#[allow(clippy::borrowed_box)]
 pub(crate) fn get_chain_spec() -> Option<&'static Box<dyn ChainSpec>> {
     // this is safe, for this function is not written when called.
     unsafe { GLOBAL_CHAIN_SPEC.as_ref() }
@@ -266,7 +267,7 @@ impl Cli {
     ) -> Result<Runner<Self>> {
         let tokio_runtime = build_runtime()?;
         // we use outside function to generate config
-        let config = f(&self, tokio_runtime.handle().clone())?;
+        let config = f(self, tokio_runtime.handle().clone())?;
 
         command.init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
         Runner::new(config, tokio_runtime)

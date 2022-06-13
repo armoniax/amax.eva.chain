@@ -136,6 +136,7 @@ impl BenchmarkExtrinsicBuilder {
     }
 }
 
+#[allow(clippy::needless_return)]
 impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
     fn remark(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
         let acc = derive_bip44_pairs_from_mnemonic::<ecdsa::Public>(DEV_PHRASE, 2);

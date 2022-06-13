@@ -178,12 +178,10 @@ pub fn run() -> sc_cli::Result<()> {
                         "All chain should be captured".to_string(),
                     )))
                 },
-                BenchmarkCmd::Block(cmd) => {
-                    return runner.sync_run(|mut config| {
-                        let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
-                        crate::client::unwrap_client!(client, cmd.run(client.clone()))
-                    })
-                },
+                BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
+                    let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
+                    crate::client::unwrap_client!(client, cmd.run(client.clone()))
+                }),
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
                     let (client, backend, _, _) = service::new_chain_ops(&mut config, &cli)?;
 

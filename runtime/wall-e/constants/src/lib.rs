@@ -12,7 +12,7 @@ pub mod governance {
 
     /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
     /// Motions may end in fewer blocks if enough votes are cast to determine the result.
-    pub type MotionDuration = ConstU32<{ 1 * DAYS }>;
+    pub type MotionDuration = ConstU32<{ DAYS }>;
 }
 
 /// Consensus constants.

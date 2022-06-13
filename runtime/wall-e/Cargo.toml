@@ -35,10 +35,12 @@ pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "p
 pallet-collective = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-membership = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-multisig = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 # Used for runtime api
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
@@ -96,10 +98,13 @@ std = [
     "pallet-collective/std",
     "pallet-grandpa/std",
     "pallet-membership/std",
+    "pallet-multisig/std",
     "pallet-session/std",
     "pallet-sudo/std",
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
+    "pallet-utility/std",
+
     "frame-system-rpc-runtime-api/std",
     "pallet-transaction-payment-rpc-runtime-api/std",
     "frame-benchmarking/std",
@@ -119,14 +124,20 @@ std = [
 ]
 runtime-benchmarks = [
     "hex-literal",
+
     "sp-runtime/runtime-benchmarks",
     "frame-benchmarking/runtime-benchmarks",
     "frame-support/runtime-benchmarks",
     "frame-system-benchmarking",
     "frame-system/runtime-benchmarks",
     "pallet-balances/runtime-benchmarks",
+    "pallet-collective/runtime-benchmarks",
     "pallet-grandpa/runtime-benchmarks",
+    "pallet-membership/runtime-benchmarks",
+    "pallet-multisig/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
+    "pallet-utility/runtime-benchmarks",
+    # Frontier
     "pallet-evm/runtime-benchmarks",
     "pallet-ethereum/runtime-benchmarks",
 ]
@@ -137,10 +148,15 @@ try-runtime = [
     "frame-support/try-runtime",
     "pallet-aura/try-runtime",
     "pallet-balances/try-runtime",
+    "pallet-collective/try-runtime",
     "pallet-grandpa/try-runtime",
+    "pallet-membership/try-runtime",
+    "pallet-multisig/try-runtime",
     "pallet-session/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
+    "pallet-utility/try-runtime",
+    # Frontier
     "pallet-transaction-payment/try-runtime",
     "pallet-ethereum/try-runtime",
 ]
