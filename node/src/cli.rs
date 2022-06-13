@@ -5,8 +5,10 @@ use sc_cli::{
     KeystoreParams, NetworkParams, OffchainWorkerParams, Result, Role, Runner, SharedParams,
     SubstrateCli,
 };
-use sc_service::{config::PrometheusConfig, BasePath, TransactionPoolOptions};
+use sc_service::{config::PrometheusConfig, BasePath, Configuration, TransactionPoolOptions};
 use sc_telemetry::TelemetryEndpoints;
+
+use crate::chain_spec::IdentifyVariant;
 
 /// Armonia Eva Node CLI.
 #[derive(Debug, clap::Parser)]
@@ -110,46 +112,53 @@ pub enum Subcommand {
     TryRuntime,
 }
 
-#[derive(Copy, Clone)]
-enum ChainNetworkType {
-    Dev,
-    Testnet,
-    Mainnet,
-}
-
-static mut CHAIN_NETWORK_TYPE: ChainNetworkType = ChainNetworkType::Mainnet;
-fn set_chain_network_type(network_type: ChainNetworkType) {
-    // this is safe, for this function should only be called in `create_runner_for_run_cmd`.
+static mut GLOBAL_CHAIN_SPEC: Option<Box<dyn ChainSpec>> = None;
+pub(crate) fn set_chain_spec(chain_spec: Box<dyn ChainSpec>) {
+    // this is safe, for this function should only be called in `load_spec`.
     unsafe {
-        CHAIN_NETWORK_TYPE = network_type;
+        GLOBAL_CHAIN_SPEC = Some(chain_spec);
     }
 }
-fn get_chain_network_type() -> ChainNetworkType {
+pub(crate) fn get_chain_spec() -> Option<&'static Box<dyn ChainSpec>> {
     // this is safe, for this function is not written when called.
-    unsafe { CHAIN_NETWORK_TYPE }
+    unsafe { GLOBAL_CHAIN_SPEC.as_ref() }
 }
 
 impl DefaultConfigurationValues for Cli {
     fn p2p_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev => 30333,
-            ChainNetworkType::Mainnet => 9922,
-            ChainNetworkType::Testnet => 19922,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9922
         }
+        if chain_spec.is_wall_e() {
+            return 19922
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9944,
-            ChainNetworkType::Testnet => 19944,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9944
         }
+        if chain_spec.is_wall_e() {
+            return 19944
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_http_listen_port() -> u16 {
-        match get_chain_network_type() {
-            ChainNetworkType::Dev | ChainNetworkType::Mainnet => 9933,
-            ChainNetworkType::Testnet => 19933,
+        let chain_spec =
+            get_chain_spec().expect("ChainSpec must be set before this function is called");
+        if chain_spec.is_eva() {
+            return 9933
         }
+        if chain_spec.is_wall_e() {
+            return 19933
+        }
+        unreachable!("All runtime type should be captured");
     }
 
     fn prometheus_listen_port() -> u16 {
@@ -160,118 +169,106 @@ impl DefaultConfigurationValues for Cli {
 /// A copy implementation for RunCmd, but the generic type `DCV` in `CliConfiguration<DCV>` is
 /// `Cli`. Notice this implementation should be updated if the `CliConfiguration` implementation for
 /// `RunCmd` has changed.
-/// More exactly, the function which should be implemented for `Cli` is the one that be called in
-/// `create_configuration` function, while it's also overridden by `RunCmd`.
-/// Thus, the easiest way is to override all functions which are overridden for `RunCmd`.
-impl CliConfiguration<Self> for Cli {
+/// More exactly, the functions which are override by `sc_cli::RunCmd` for `CliConfiguration<DCV>`
+/// should be all override by `RunCmd` for `CliConfiguration<Cli>`.
+impl CliConfiguration<Cli> for RunCmd {
     fn shared_params(&self) -> &SharedParams {
-        self.run.base.shared_params()
+        self.base.shared_params()
     }
     fn import_params(&self) -> Option<&ImportParams> {
-        self.run.base.import_params()
+        self.base.import_params()
     }
     fn network_params(&self) -> Option<&NetworkParams> {
-        self.run.base.network_params()
+        self.base.network_params()
     }
     fn keystore_params(&self) -> Option<&KeystoreParams> {
-        self.run.base.keystore_params()
+        self.base.keystore_params()
     }
     fn offchain_worker_params(&self) -> Option<&OffchainWorkerParams> {
-        self.run.base.offchain_worker_params()
+        self.base.offchain_worker_params()
     }
     fn node_name(&self) -> Result<String> {
-        self.run.base.node_name()
+        self.base.node_name()
     }
     fn dev_key_seed(&self, is_dev: bool) -> Result<Option<String>> {
-        self.run.base.dev_key_seed(is_dev)
+        self.base.dev_key_seed(is_dev)
     }
     fn telemetry_endpoints(
         &self,
         chain_spec: &Box<dyn ChainSpec>,
     ) -> Result<Option<TelemetryEndpoints>> {
-        self.run.base.telemetry_endpoints(chain_spec)
+        self.base.telemetry_endpoints(chain_spec)
     }
     fn role(&self, is_dev: bool) -> Result<Role> {
-        self.run.base.role(is_dev)
+        self.base.role(is_dev)
     }
     fn force_authoring(&self) -> Result<bool> {
-        self.run.base.force_authoring()
+        self.base.force_authoring()
     }
     fn prometheus_config(
         &self,
         default_listen_port: u16,
         chain_spec: &Box<dyn ChainSpec>,
     ) -> Result<Option<PrometheusConfig>> {
-        self.run.base.prometheus_config(default_listen_port, chain_spec)
+        self.base.prometheus_config(default_listen_port, chain_spec)
     }
     fn disable_grandpa(&self) -> Result<bool> {
-        self.run.base.disable_grandpa()
+        self.base.disable_grandpa()
     }
     fn rpc_ws_max_connections(&self) -> Result<Option<usize>> {
-        self.run.base.rpc_ws_max_connections()
+        self.base.rpc_ws_max_connections()
     }
 
     fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
-        self.run.base.rpc_cors(is_dev)
+        self.base.rpc_cors(is_dev)
     }
     fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.run.base.rpc_http(default_listen_port)
+        self.base.rpc_http(default_listen_port)
     }
     fn rpc_ipc(&self) -> Result<Option<String>> {
-        self.run.base.rpc_ipc()
+        self.base.rpc_ipc()
     }
     fn rpc_ws(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.run.base.rpc_ws(default_listen_port)
+        self.base.rpc_ws(default_listen_port)
     }
     fn rpc_methods(&self) -> Result<sc_service::config::RpcMethods> {
-        self.run.base.rpc_methods()
+        self.base.rpc_methods()
     }
     fn rpc_max_payload(&self) -> Result<Option<usize>> {
-        self.run.base.rpc_max_payload()
+        self.base.rpc_max_payload()
     }
 
     fn ws_max_out_buffer_capacity(&self) -> Result<Option<usize>> {
-        self.run.base.ws_max_out_buffer_capacity()
+        self.base.ws_max_out_buffer_capacity()
     }
     fn transaction_pool(&self) -> Result<TransactionPoolOptions> {
-        self.run.base.transaction_pool()
+        self.base.transaction_pool()
     }
     fn max_runtime_instances(&self) -> Result<Option<usize>> {
-        self.run.base.max_runtime_instances()
+        self.base.max_runtime_instances()
     }
     fn runtime_cache_size(&self) -> Result<u8> {
-        self.run.base.runtime_cache_size()
+        self.base.runtime_cache_size()
     }
     fn base_path(&self) -> Result<Option<BasePath>> {
-        self.run.base.base_path()
+        self.base.base_path()
     }
 }
 
 impl Cli {
-    /// Build a runner based on `RunCmd`.
-    /// This function is same as `create_runner` in `SubstrateCli`, but it just uses for `RunCmd`.
-    pub fn create_runner_for_run_cmd(&self, command: &RunCmd) -> Result<Runner<Self>> {
+    /// Build a runner with the config that is generated from outside.
+    /// This function is same as `create_runner` in `SubstrateCli`, but it generate the config from
+    /// the function closure.
+    pub fn create_runner_with_config<T: CliConfiguration<()>>(
+        &self,
+        command: &T,
+        f: impl Fn(&Self, tokio::runtime::Handle) -> Result<Configuration>,
+    ) -> Result<Runner<Self>> {
         let tokio_runtime = build_runtime()?;
-        // a hacky way to set network type directly.
-        let is_dev = self.is_dev()?;
-        let chain_id = self.chain_id(is_dev)?;
-        let chain_spec = self.load_spec(&chain_id)?;
-        match chain_spec.id() {
-            "dev" | "local_testnet" => set_chain_network_type(ChainNetworkType::Dev),
-            // TODO add mainnet and testnet
-            _ => set_chain_network_type(ChainNetworkType::Testnet),
-        }
+        // we use outside function to generate config
+        let config = f(&self, tokio_runtime.handle().clone())?;
 
-        // we use our custom configuration (`Self`) to replace `RunCmd`'s configuration.
-        let config = CliConfiguration::<Self>::create_configuration(
-            self,
-            self,
-            tokio_runtime.handle().clone(),
-        )?;
-
-        command
-            .base
-            .init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
+        command.init(&Self::support_url(), &Self::impl_version(), |_, _| {}, &config)?;
         Runner::new(config, tokio_runtime)
     }
 }

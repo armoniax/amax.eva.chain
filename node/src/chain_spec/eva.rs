@@ -1,9 +1,11 @@
 // Substrate
 use sc_service::{ChainType, Properties};
 // Local
-use amax_eva_runtime::{AccountId, AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
+use eva_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, WASM_BINARY};
+use eva_runtime_constants::currency::UNITS;
+use primitives_core::{AccountId, Balance};
 
-use crate::chain_spec::{authority_keys_from_seed, generate_dev_accounts};
+use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -30,19 +32,20 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Development",
+        "Eva Development",
         // ID
-        "dev",
+        "eva_dev",
         ChainType::Development,
         move || {
-            testnet_genesis(
+            let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice")],
                 // Sudo account
                 accounts[0],
                 // Pre-funded accounts
-                accounts.clone(),
+                endowed,
                 true,
             )
         },
@@ -71,19 +74,20 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        "Eva Local Testnet",
         // ID
-        "local_testnet",
+        "eva_local_testnet",
         ChainType::Local,
         move || {
-            testnet_genesis(
+            let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
                 // Sudo account
                 accounts[0], // Alith
                 // Pre-funded accounts
-                accounts.clone(),
+                endowed,
                 true,
             )
         },
@@ -102,29 +106,22 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 }
 
 /// Configure initial storage state for FRAME modules.
-fn testnet_genesis(
+fn genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(AuraId, GrandpaId)>,
     root_key: AccountId,
-    endowed_accounts: Vec<AccountId>,
+    endowed: Vec<(AccountId, Balance)>,
     _enable_println: bool,
 ) -> GenesisConfig {
-    use amax_eva_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
+    use eva_runtime::{AuraConfig, BalancesConfig, GrandpaConfig, SudoConfig, SystemConfig};
     GenesisConfig {
         // System && Utility.
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(root_key),
-        },
         // Monetary.
-        balances: BalancesConfig {
-            // Configure endowed accounts with initial balance of 1 << 60.
-            balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
-        },
+        balances: BalancesConfig { balances: endowed },
         transaction_payment: Default::default(),
         // Consesnsus.
         aura: AuraConfig {
@@ -133,11 +130,15 @@ fn testnet_genesis(
         grandpa: GrandpaConfig {
             authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
         },
+        technical_committee: Default::default(),
+        technical_committee_membership: Default::default(),
         // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
         base_fee: Default::default(),
-        technical_committee: Default::default(),
-        technical_committee_membership: Default::default(),
+        sudo: SudoConfig {
+            // Assign network admin rights.
+            key: Some(root_key),
+        },
     }
 }

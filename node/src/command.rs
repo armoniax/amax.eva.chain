@@ -1,6 +1,6 @@
 // Substrate
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
-use sc_service::{DatabaseSource, PartialComponents};
+use sc_service::DatabaseSource;
 // Frontier
 use fc_db::frontier_database_dir;
 
@@ -36,17 +36,43 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
-        Ok(match id {
-            "dev" => Box::new(chain_spec::dev::development_config()?),
-            "" | "local" => Box::new(chain_spec::dev::local_testnet_config()?),
-            path => Box::new(chain_spec::dev::ChainSpec::from_json_file(
-                std::path::PathBuf::from(path),
-            )?),
-        })
+        let (spec1, spec2): (Box<dyn ChainSpec>, Box<dyn ChainSpec>) = match id {
+            "" | "wall-e-dev" | "dev" => {
+                let spec = chain_spec::wall_e::development_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "wall-e-local" => {
+                let spec = chain_spec::wall_e::local_testnet_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "eva-dev" => {
+                let spec = chain_spec::eva::development_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            "eva-local" => {
+                let spec = chain_spec::eva::local_testnet_config()?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+            path => {
+                let spec =
+                    chain_spec::wall_e::ChainSpec::from_json_file(std::path::PathBuf::from(path))?;
+                (Box::new(spec.clone()), Box::new(spec))
+            },
+        };
+        // a hacky way to set network type directly.
+        crate::cli::set_chain_spec(spec2);
+        Ok(spec1)
     }
 
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &amax_eva_runtime::VERSION
+    fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
+        use crate::chain_spec::IdentifyVariant;
+        if chain_spec.is_eva() {
+            return &eva_runtime::VERSION
+        }
+        if chain_spec.is_wall_e() {
+            return &wall_e_runtime::VERSION
+        }
+        unreachable!("All chains should be captured");
     }
 }
 
@@ -62,33 +88,31 @@ pub fn run() -> sc_cli::Result<()> {
         },
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                let PartialComponents { client, task_manager, import_queue, .. } =
-                    service::new_partial(&config, &cli)?;
+            runner.async_run(|mut config| {
+                let (client, _, import_queue, task_manager) =
+                    service::new_chain_ops(&mut config, &cli)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         },
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                let PartialComponents { client, task_manager, .. } =
-                    service::new_partial(&config, &cli)?;
+            runner.async_run(|mut config| {
+                let (client, _, _, task_manager) = service::new_chain_ops(&mut config, &cli)?;
                 Ok((cmd.run(client, config.database), task_manager))
             })
         },
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                let PartialComponents { client, task_manager, .. } =
-                    service::new_partial(&config, &cli)?;
+            runner.async_run(|mut config| {
+                let (client, _, _, task_manager) = service::new_chain_ops(&mut config, &cli)?;
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         },
         Some(Subcommand::ImportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                let PartialComponents { client, task_manager, import_queue, .. } =
-                    service::new_partial(&config, &cli)?;
+            runner.async_run(|mut config| {
+                let (client, _, import_queue, task_manager) =
+                    service::new_chain_ops(&mut config, &cli)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         },
@@ -115,9 +139,8 @@ pub fn run() -> sc_cli::Result<()> {
         },
         Some(Subcommand::Revert(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                let PartialComponents { client, task_manager, backend, .. } =
-                    service::new_partial(&config, &cli)?;
+            runner.async_run(|mut config| {
+                let (client, backend, _, task_manager) = service::new_chain_ops(&mut config, &cli)?;
                 let aux_revert = Box::new(move |client, _, blocks| {
                     sc_finality_grandpa::revert(client, blocks)?;
                     Ok(())
@@ -132,60 +155,105 @@ pub fn run() -> sc_cli::Result<()> {
             use std::sync::Arc;
 
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|config| {
-                let PartialComponents { client, backend, .. } =
-                    service::new_partial(&config, &cli)?;
+            let chain_spec = &runner.config().chain_spec;
 
-                // This switch needs to be in the client, since the client decides
-                // which sub-commands it wants to support.
-                match cmd {
-                    BenchmarkCmd::Pallet(cmd) => {
-                        cmd.run::<amax_eva_runtime::Block, service::ExecutorDispatch>(config)
-                    },
-                    BenchmarkCmd::Block(cmd) => cmd.run(client),
-                    BenchmarkCmd::Storage(cmd) => {
-                        let db = backend.expose_db();
-                        let storage = backend.expose_storage();
-                        cmd.run(config, client, db, storage)
-                    },
-                    BenchmarkCmd::Overhead(cmd) => {
-                        let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
-                        cmd.run(config, client, inherent_benchmark_data()?, Arc::new(ext_builder))
-                    },
-                    BenchmarkCmd::Machine(cmd) => {
-                        cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone())
-                    },
-                }
-            })
+            // This switch needs to be in the client, since the client decides
+            // which sub-commands it wants to support.
+            match cmd {
+                BenchmarkCmd::Pallet(cmd) => {
+                    use crate::{
+                        chain_spec::IdentifyVariant,
+                        client::{EvaExecutor, WallEExecutor},
+                    };
+                    if chain_spec.is_eva() {
+                        return runner
+                            .sync_run(|config| cmd.run::<eva_runtime::Block, EvaExecutor>(config))
+                    }
+                    if chain_spec.is_wall_e() {
+                        return runner.sync_run(|config| {
+                            cmd.run::<wall_e_runtime::Block, WallEExecutor>(config)
+                        })
+                    }
+                    Err(sc_cli::Error::Service(sc_service::Error::Other(
+                        "All chain should be captured".to_string(),
+                    )))
+                },
+                BenchmarkCmd::Block(cmd) => {
+                    return runner.sync_run(|mut config| {
+                        let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
+                        crate::client::unwrap_client!(client, cmd.run(client.clone()))
+                    })
+                },
+                BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
+                    let (client, backend, _, _) = service::new_chain_ops(&mut config, &cli)?;
+
+                    let db = backend.expose_db();
+                    let storage = backend.expose_storage();
+                    crate::client::unwrap_client!(
+                        client,
+                        cmd.run(config, client.clone(), db, storage)
+                    )
+                }),
+                BenchmarkCmd::Overhead(cmd) => runner.sync_run(|mut config| {
+                    let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
+
+                    let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
+                    crate::client::unwrap_client!(
+                        client,
+                        cmd.run(
+                            config,
+                            client.clone(),
+                            inherent_benchmark_data()?,
+                            Arc::new(ext_builder)
+                        )
+                    )
+                }),
+                BenchmarkCmd::Machine(cmd) => {
+                    runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
+                },
+            }
         },
         #[cfg(not(feature = "runtime-benchmarks"))]
         Some(Subcommand::Benchmark) => Err("Benchmarking wasn't enabled when building the node. \
-			You can enable it with `--features runtime-benchmarks`."
+        	You can enable it with `--features runtime-benchmarks`."
             .into()),
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
+            use crate::{
+                chain_spec::IdentifyVariant,
+                client::{EvaExecutor, WallEExecutor},
+            };
+
             let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                // we don't need any of the components of new_partial, just a runtime, or a task
-                // manager to do `async_run`.
-                let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-                let task_manager =
-                    sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
-                        .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
-                Ok((
-                    cmd.run::<amax_eva_runtime::Block, service::ExecutorDispatch>(config),
-                    task_manager,
-                ))
-            })
+            let chain_spec = &runner.config().chain_spec;
+            let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
+            let task_manager =
+                sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
+                    .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+            if chain_spec.is_eva() {
+                return runner.async_run(|config| {
+                    Ok((cmd.run::<eva_runtime::Block, EvaExecutor>(config), task_manager))
+                })
+            }
+            if chain_spec.is_wall_e() {
+                return runner.async_run(|config| {
+                    Ok((cmd.run::<wall_e_runtime::Block, WallEExecutor>(config), task_manager))
+                })
+            }
+            Err("All runtime type should be captured".into())
         },
         #[cfg(not(feature = "try-runtime"))]
         Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
-			You can enable it with `--features try-runtime`."
+        	You can enable it with `--features try-runtime`."
             .into()),
         None => {
-            let runner = cli.create_runner_for_run_cmd(&cli.run)?;
+            let runner = cli.create_runner_with_config(&cli.run.base, |cli, tokio_handle| {
+                // note it's `cli.run` not `cli.run.base` here, for `cli.run` is implemented by
+                // `CliConfiguration<Cli>`, for `CliConfiguration<()>`
+                SubstrateCli::create_configuration(cli, &cli.run, tokio_handle)
+            })?;
             runner.run_node_until_exit(|config| async move {
-                service::new_full(config, &cli).map_err(sc_cli::Error::Service)
+                service::build_full(config, &cli).map_err(sc_cli::Error::Service)
             })
         },
     }
