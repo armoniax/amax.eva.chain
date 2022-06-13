@@ -66,7 +66,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             authorities: Vec<T::AccountId>,
         ) -> DispatchResult {
-            ensure_none(origin)?;
+            ensure_root(origin)?;
 
             let mut authorities = authorities;
             authorities.sort();
@@ -87,7 +87,7 @@ pub mod pallet {
         /// even there is no change in current group.
         #[pallet::weight(42_131_000 as Weight)]
         pub fn force_switch(origin: OriginFor<T>) -> DispatchResult {
-            ensure_none(origin)?;
+            ensure_root(origin)?;
             // set flag for switch.
             SwitchNewGroup::<T>::put(true);
             Self::deposit_event(Event::<T>::ForceSwitchGroup);
