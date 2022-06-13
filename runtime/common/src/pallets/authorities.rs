@@ -4,6 +4,8 @@ use sp_std::prelude::*;
 
 pub use pallet::*;
 
+const TARGET: &str = "runtime::authorities";
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -57,13 +59,35 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub keys: Vec<T::AccountId>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self { keys: Default::default() }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            if !self.keys.is_empty() {
+                Pallet::<T>::set_authorities(self.keys.clone())
+                    .expect("Chain spec must be valid for keys.");
+            }
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Set new authorities group, and this group will be commit to the consensus system in next
         /// session.
         #[pallet::weight(
             (42_131_000 as Weight)
-                .saturating_add(T::DbWeight::get().reads(1 as Weight))
+                .saturating_add(T::DbWeight::get().reads(2 as Weight))
                 .saturating_add(T::DbWeight::get().writes(1 as Weight))
         )]
         pub fn new_authorities(
@@ -72,34 +96,15 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            let mut authorities = authorities;
-            authorities.sort();
-
-            ensure!(authorities.len() > 0, Error::<T>::EmptyAuthorityGroup);
-
-            let mut iter = authorities.iter();
-            let mut last = iter.next().expect("At least contains one element.");
-            for n in iter {
-                // check duplicated authority.
-                if last != n {
-                    last = n
-                } else {
-                    return Err(Error::<T>::DuplicatedAuthority.into())
-                }
-            }
-
-            Authorities::<T>::try_mutate::<_, Error<T>, _>(|current| {
-                if let Some(old) = current {
-                    // check new group is same as old group.
-                    ensure!(*old != authorities, Error::<T>::SameAuthorityGroup);
-                }
-                // set to new group;
-                *current = Some(authorities.clone());
-                Ok(())
-            })?;
+            Self::set_authorities(authorities)?;
             // set switch flag to trigger authoritychange in next session.
             SwitchNewGroup::<T>::put(true);
-            Self::deposit_event(Event::<T>::PrepareNewAuthorities(authorities));
+
+            // we use the decoded data from the storage, not use the one from parameter, for
+            // `set_authorities` does not return result, and we wanna know the processed result.
+            if let Some(authorities) = Self::authorities() {
+                Self::deposit_event(Event::<T>::PrepareNewAuthorities(authorities));
+            }
             Ok(())
         }
         /// Force to switch authorities group for current authorities storage in next session,
@@ -115,17 +120,56 @@ pub mod pallet {
     }
 }
 
+impl<T: Config> Pallet<T> {
+    fn set_authorities(authorities: Vec<T::AccountId>) -> sp_runtime::DispatchResult {
+        let mut authorities = authorities;
+        authorities.sort();
+
+        ensure!(authorities.len() > 0, Error::<T>::EmptyAuthorityGroup);
+
+        let mut iter = authorities.iter();
+        let mut last = iter.next().expect("At least contains one element.");
+        for n in iter {
+            // check duplicated authority.
+            if last != n {
+                last = n
+            } else {
+                return Err(Error::<T>::DuplicatedAuthority.into())
+            }
+        }
+
+        Authorities::<T>::try_mutate::<_, Error<T>, _>(|current| {
+            if let Some(old) = current {
+                // check new group is same as old group.
+                ensure!(*old != authorities, Error::<T>::SameAuthorityGroup);
+            }
+            // set to new group;
+            *current = Some(authorities);
+            Ok(())
+        })?;
+        Ok(())
+    }
+}
+
 impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
     fn new_session(index: sp_staking::SessionIndex) -> Option<Vec<T::AccountId>> {
-        log::info!("in new_session:{:?} switch:{:?}", index, SwitchNewGroup::<T>::get());
-        if !Self::switch_new_group().unwrap_or(false) {
+        let need_switch = Self::switch_new_group().unwrap_or(false);
+        log::debug!(
+            target: TARGET,
+            "in new_session:{:?} need switch to new group:{:}",
+            index,
+            need_switch
+        );
+        if !need_switch {
             return None
         }
 
         let authorities = Self::authorities();
-        log::info!("aurhotities :{:?}", authorities);
         if let Some(ref auths) = authorities {
+            log::debug!(target: TARGET, "new authorities :{:?}", auths);
             Self::deposit_event(Event::<T>::ChangeAuthorities { index, authorities: auths.clone() })
+        } else {
+            log::debug!(target: TARGET, "current authorities is `None` and do not change.");
         }
         // clear flag for switch.
         SwitchNewGroup::<T>::take();

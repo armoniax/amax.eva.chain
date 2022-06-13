@@ -117,7 +117,9 @@ fn genesis(
     root_key: AccountId,
     endowed: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
-    use wall_e_runtime::{BalancesConfig, SessionConfig, SudoConfig, SystemConfig};
+    use wall_e_runtime::{
+        AuthoritiesConfig, BalancesConfig, SessionConfig, SudoConfig, SystemConfig,
+    };
     GenesisConfig {
         // System && Utility.
         system: SystemConfig {
@@ -135,6 +137,9 @@ fn genesis(
                 .iter()
                 .map(|x| (x.0.clone(), x.0.clone(), session_keys(x.1.clone(), x.2.clone())))
                 .collect::<Vec<_>>(),
+        },
+        authorities: AuthoritiesConfig {
+            keys: initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
         },
         technical_committee: Default::default(),
         technical_committee_membership: Default::default(),
