@@ -39,12 +39,23 @@ pub mod currency {
 
 /// Fee-related constants.
 pub mod fee {
-    use frame_support::weights::IdentityFee;
+    use crate::constants::currency::CENTS;
+    use frame_support::{traits::ConstU128, weights::IdentityFee};
     use primitives_core::Balance;
 
     /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
     /// node's balance type.
     pub type WeightToFee = IdentityFee<Balance>;
+
+    // TODO: need to design
+    const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+    }
+
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub type MultisigDepositBase = ConstU128<{ deposit(1, 88) }>;
+    // Additional storage item size of 32 bytes.
+    pub type MultisigDepositFactor = ConstU128<{ deposit(0, 32) }>;
 }
 
 /// System constants.
@@ -106,7 +117,7 @@ pub mod governance {
 /// EVM-related constants.
 pub mod evm {
     use super::*;
-    // TODO need to check gaslimt with team
+    // TODO need to check gaslimit with team
     parameter_types! {
         pub BlockGasLimit: U256 = U256::from(u32::max_value());
 

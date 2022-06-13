@@ -24,7 +24,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU16, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
     weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureRoot;
@@ -139,6 +139,23 @@ impl pallet_timestamp::Config for Runtime {
     #[cfg(feature = "manual-seal")]
     type OnTimestampSet = ();
     type MinimumPeriod = time::MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl pallet_utility::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type Currency = Balances;
+    type DepositBase = fee::MultisigDepositBase;
+    type DepositFactor = fee::MultisigDepositFactor;
+    type MaxSignatories = ConstU16<100>;
     type WeightInfo = ();
 }
 
@@ -316,6 +333,8 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
+        Utility: pallet_utility = 2,
+        Multisig: pallet_multisig = 3,
 
         // Monetary.
         Balances: pallet_balances = 10,
