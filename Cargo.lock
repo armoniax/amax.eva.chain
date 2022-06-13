@@ -1636,6 +1636,7 @@ dependencies = [
  "pallet-evm",
  "pallet-grandpa",
  "pallet-membership",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",

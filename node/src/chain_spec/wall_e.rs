@@ -1,8 +1,8 @@
 // Substrate
-use sc_service::{ChainType, Properties};
+use sc_service::ChainType;
 // Local
 use primitives_core::{AccountId, Balance};
-use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SS58Prefix, SessionKeys, WASM_BINARY};
+use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SessionKeys, WASM_BINARY};
 use wall_e_runtime_constants::currency::UNITS;
 
 use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
@@ -12,14 +12,6 @@ use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
-
-fn properties() -> Properties {
-    let mut properties = Properties::new();
-    properties.insert("tokenSymbol".into(), "AMAX".into());
-    properties.insert("tokenDecimals".into(), 18.into());
-    properties.insert("ss58Format".into(), SS58Prefix::get().into());
-    properties
-}
 
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
@@ -56,7 +48,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         None,
         // Properties
-        Some(properties()),
+        Some(super::properties()),
         // Extensions
         None,
     ))
@@ -100,7 +92,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Properties
         None,
-        Some(properties()),
+        Some(super::properties()),
         // Extensions
         None,
     ))
