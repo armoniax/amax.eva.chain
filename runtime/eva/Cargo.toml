@@ -151,6 +151,7 @@ try-runtime = [
     "pallet-grandpa/try-runtime",
     "pallet-membership/try-runtime",
     "pallet-multisig/try-runtime",
+    "pallet-session/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
     "pallet-utility/try-runtime",
