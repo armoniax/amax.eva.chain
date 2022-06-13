@@ -179,7 +179,7 @@ pub fn run() -> sc_cli::Result<()> {
                     )))
                 },
                 BenchmarkCmd::Block(cmd) => {
-                    return runner.sync_run(|mut config| {
+                    runner.sync_run(|mut config| {
                         let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
                         crate::client::unwrap_client!(client, cmd.run(client.clone()))
                     })
