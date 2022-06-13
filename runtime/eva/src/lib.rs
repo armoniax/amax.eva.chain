@@ -45,7 +45,7 @@ use primitives_core::{
     Signature,
 };
 
-use eva_runtime_constants::{balances, consensus, currency, evm, fee, governance, system, time};
+use eva_runtime_constants::{balances, consensus, evm, fee, governance, system, time};
 use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
 
 // To learn more about runtime versioning and what each of the following value means:

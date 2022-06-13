@@ -46,7 +46,7 @@ use primitives_core::{
 };
 
 use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
-use wall_e_runtime_constants::{balances, consensus, currency, evm, fee, governance, system, time};
+use wall_e_runtime_constants::{balances, consensus, evm, fee, governance, system, time};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning

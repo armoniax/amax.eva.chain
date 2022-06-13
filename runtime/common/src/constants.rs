@@ -27,7 +27,6 @@ pub mod balances {
 
 /// Currency constants.
 pub mod currency {
-    use frame_support::traits::ConstU128;
     use primitives_core::Balance;
 
     // The decimal for 1 token is 18.
@@ -40,7 +39,8 @@ pub mod currency {
 
 /// Fee-related constants.
 pub mod fee {
-    use frame_support::weights::IdentityFee;
+    use crate::constants::currency::CENTS;
+    use frame_support::{traits::ConstU128, weights::IdentityFee};
     use primitives_core::Balance;
 
     /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
