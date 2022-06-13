@@ -5671,6 +5671,7 @@ dependencies = [
  "fp-rpc",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-base-fee",
  "pallet-ethereum",
  "pallet-evm",

@@ -40,6 +40,10 @@ pub mod pallet {
     pub enum Error<T> {
         /// The new authority group is same as current one, we do nothing for this.
         SameAuthorityGroup,
+        /// The new authority group can be empty.
+        EmptyAuthorityGroup,
+        /// The new authority group contains duplicated authority.
+        DuplicatedAuthority,
     }
 
     #[pallet::storage]
@@ -71,14 +75,29 @@ pub mod pallet {
             let mut authorities = authorities;
             authorities.sort();
 
+            ensure!(authorities.len() > 0, Error::<T>::EmptyAuthorityGroup);
+
+            let mut iter = authorities.iter();
+            let mut last = iter.next().expect("At least contains one element.");
+            for n in iter {
+                // check duplicated authority.
+                if last != n {
+                    last = n
+                } else {
+                    return Err(Error::<T>::DuplicatedAuthority.into())
+                }
+            }
+
             Authorities::<T>::try_mutate::<_, Error<T>, _>(|current| {
                 if let Some(old) = current {
+                    // check new group is same as old group.
                     ensure!(*old != authorities, Error::<T>::SameAuthorityGroup);
-                    // set to new group;
-                    *old = authorities.clone();
                 }
+                // set to new group;
+                *current = Some(authorities.clone());
                 Ok(())
             })?;
+            // set switch flag to trigger authoritychange in next session.
             SwitchNewGroup::<T>::put(true);
             Self::deposit_event(Event::<T>::PrepareNewAuthorities(authorities));
             Ok(())
@@ -98,11 +117,13 @@ pub mod pallet {
 
 impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
     fn new_session(index: sp_staking::SessionIndex) -> Option<Vec<T::AccountId>> {
+        log::info!("in new_session:{:?} switch:{:?}", index, SwitchNewGroup::<T>::get());
         if !Self::switch_new_group().unwrap_or(false) {
             return None
         }
 
         let authorities = Self::authorities();
+        log::info!("aurhotities :{:?}", authorities);
         if let Some(ref auths) = authorities {
             Self::deposit_event(Event::<T>::ChangeAuthorities { index, authorities: auths.clone() })
         }
