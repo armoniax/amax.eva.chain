@@ -60,9 +60,9 @@ pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
-
 runtime-common = { path = "../common", default-features = false }
-wall-e-runtime-constants = { path = "./constants", default-features = false }
+
+wall-e-runtime-constants = { path = "constants", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
@@ -102,7 +102,6 @@ std = [
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
     "pallet-utility/std",
-
     "frame-system-rpc-runtime-api/std",
     "pallet-transaction-payment-rpc-runtime-api/std",
     "frame-benchmarking/std",
@@ -116,13 +115,11 @@ std = [
     "pallet-evm/std",
     # Local
     "primitives-core/std",
-
     "runtime-common/std",
     "wall-e-runtime-constants/std",
 ]
 runtime-benchmarks = [
     "hex-literal",
-
     "sp-runtime/runtime-benchmarks",
     "frame-benchmarking/runtime-benchmarks",
     "frame-support/runtime-benchmarks",

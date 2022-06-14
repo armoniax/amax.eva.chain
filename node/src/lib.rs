@@ -1,7 +1,7 @@
 //! Armonia Eva Node CLI library.
 
 #![warn(missing_docs)]
-#![allow(clippy::type_complexity, clippy::too_many_arguments)]
+#![allow(clippy::type_complexity, clippy::too_many_arguments, clippy::needless_return)]
 
 mod chain_spec;
 pub(crate) mod cli;

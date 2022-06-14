@@ -1675,7 +1675,7 @@ dependencies = [
 name = "eva-runtime-constants"
 version = "0.1.0"
 dependencies = [
- "runtime-common",
+ "runtime-common-constants",
 ]
 
 [[package]]
@@ -5724,11 +5724,21 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "parity-scale-codec",
  "primitives-core",
+ "runtime-common-constants",
  "sp-consensus-aura",
  "sp-core",
  "sp-finality-grandpa",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "runtime-common-constants"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "primitives-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -8773,7 +8783,7 @@ dependencies = [
 name = "wall-e-runtime-constants"
 version = "0.1.0"
 dependencies = [
- "runtime-common",
+ "runtime-common-constants",
 ]
 
 [[package]]

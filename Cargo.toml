@@ -4,6 +4,8 @@ members = [
     "node",
 
     # Runtime
+    "runtime/common",
+    "runtime/common/constants",
     "runtime/eva",
     "runtime/eva/constants",
     "runtime/wall-e",

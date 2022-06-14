@@ -28,6 +28,7 @@ pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier",
 pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
+runtime-common-constants = { path = "constants", default-features = false }
 
 [features]
 default = ["std"]
@@ -53,4 +54,5 @@ std = [
     "pallet-evm-precompile-sha3fips/std",
     # Local
     "primitives-core/std",
+    "runtime-common-constants/std",
 ]
