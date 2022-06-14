@@ -9,10 +9,12 @@ license = "GPL-3.0"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-runtime-common = { path = "../../common", default-features = false }
+primitives-core = { path = "../../../primitives/core", default-features = false }
+runtime-common-constants = { path = "../../common/constants", default-features = false }
 
 [features]
 default = ["std"]
 std = [
-    "runtime-common/std",
+    "primitives-core/std",
+    "runtime-common-constants/std",
 ]

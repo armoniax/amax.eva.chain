@@ -136,7 +136,6 @@ impl BenchmarkExtrinsicBuilder {
     }
 }
 
-#[allow(clippy::needless_return)]
 impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
     fn remark(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
         let acc = derive_bip44_pairs_from_mnemonic::<ecdsa::Public>(DEV_PHRASE, 2);
@@ -151,7 +150,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
                 use runtime::{Call, SystemCall};
 
                 let call = Call::System(SystemCall::remark { remark: vec![] });
-                let period = runtime_common::constants::system::BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+                let period = runtime::BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
 
                 let current_block = 0;
                 let tip = 0;

@@ -12,7 +12,7 @@ fmt:
 	cargo fmt --all
 
 clippy:
-	cargo +nightly clippy --all --all-targets -- -D warnings
+	cargo clippy --all --all-targets --features runtime-benchmarks,try-runtime -- -D warnings
 
 dev: fmt clippy
 
@@ -36,6 +36,3 @@ test-release: fmt
 
 test: fmt
 	cargo test --all
-
-ci-clippy:
-	cargo +nightly clippy --all --all-targets --features runtime-benchmarks,try-runtime -- -D warnings

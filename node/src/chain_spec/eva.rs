@@ -136,11 +136,11 @@ fn genesis(
         session: SessionConfig {
             keys: initial_authorities
                 .iter()
-                .map(|x| (x.0.clone(), x.0.clone(), session_keys(x.1.clone(), x.2.clone())))
+                .map(|x| (x.0, x.0, session_keys(x.1.clone(), x.2.clone())))
                 .collect::<Vec<_>>(),
         },
         authorities: AuthoritiesConfig {
-            keys: initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+            keys: initial_authorities.iter().map(|x| (x.0)).collect::<Vec<_>>(),
         },
         technical_committee: Default::default(),
         technical_committee_membership: Default::default(),

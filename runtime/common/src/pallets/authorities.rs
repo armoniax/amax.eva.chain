@@ -2,7 +2,7 @@ use frame_support::ensure;
 use sp_runtime::traits::Convert;
 use sp_std::prelude::*;
 
-pub use pallet::*;
+pub use self::pallet::*;
 
 const TARGET: &str = "runtime::authorities";
 
@@ -195,7 +195,7 @@ impl<T: Config> Pallet<T> {
         let mut authorities = authorities;
         authorities.sort();
 
-        ensure!(authorities.len() > 0, Error::<T>::EmptyAuthorityGroup);
+        ensure!(!authorities.is_empty(), Error::<T>::EmptyAuthorityGroup);
 
         let mut iter = authorities.iter();
         let mut last = iter.next().expect("At least contains one element.");
