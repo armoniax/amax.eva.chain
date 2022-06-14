@@ -48,7 +48,7 @@ impl<Runtime: pallet_session::Config<ValidatorId = AccountId20>, F: FindAuthor<u
     {
         #[cfg(feature = "aura")]
         {
-            return pallet_session::FindAccountFromAuthorIndex::<Runtime, F>::find_author(_digests)
+            pallet_session::FindAccountFromAuthorIndex::<Runtime, F>::find_author(_digests)
                 .map(Into::into)
         }
         #[cfg(not(feature = "aura"))]
