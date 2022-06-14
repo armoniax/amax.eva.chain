@@ -64,3 +64,4 @@ std = [
     "primitives-core/std",
     "runtime-common-constants/std",
 ]
+aura = []

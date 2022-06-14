@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use sp_runtime::traits::Extrinsic;
+use frame_support::traits::FindAuthor;
+use primitives_core::AccountId20;
+use sp_core::H160;
+use sp_runtime::{traits::Extrinsic, ConsensusEngineId};
 use sp_std::marker::PhantomData;
 
 /// EthTransaction for rpc.
@@ -32,5 +35,25 @@ where
         let encoded = extrinsic.encode();
         primitives_core::UncheckedExtrinsic::decode(&mut &encoded[..])
             .expect("Encoded extrinsic is always valid")
+    }
+}
+
+pub struct CoinbaseAuthor<Runtime, F>(PhantomData<(Runtime, F)>);
+impl<Runtime: pallet_session::Config<ValidatorId = AccountId20>, F: FindAuthor<u32>>
+    FindAuthor<H160> for CoinbaseAuthor<Runtime, F>
+{
+    fn find_author<'a, I>(_digests: I) -> Option<H160>
+    where
+        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+    {
+        #[cfg(feature = "aura")]
+        {
+            return pallet_session::FindAccountFromAuthorIndex::<Runtime, F>::find_author(_digests)
+                .map(Into::into)
+        }
+        #[cfg(not(feature = "aura"))]
+        {
+            None
+        }
     }
 }

@@ -17,14 +17,14 @@ use sp_runtime::{
         OpaqueKeys, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, ConsensusEngineId, Permill,
+    ApplyExtrinsicResult, Permill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU16, ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU16, ConstU32, EnsureOneOf, KeyOwnerProofSystem},
     weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
@@ -46,7 +46,8 @@ use primitives_core::{
     Signature,
 };
 use runtime_common::{
-    evm_config, pallets::authorities as pallet_authorities, precompiles::FrontierPrecompiles,
+    ethereum::CoinbaseAuthor, evm_config, pallets::authorities as pallet_authorities,
+    precompiles::FrontierPrecompiles,
 };
 
 // To learn more about runtime versioning and what each of the following value means:
@@ -334,24 +335,6 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
 // EVM compatibility.
 // ################################################################################################
 
-pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(_digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        // TODO change the implementation after bringing in the Session or related pallet to get
-        // accountid.
-        #[cfg(feature = "aura")]
-        if let Some(author_index) = F::find_author(_digests) {
-            use sp_core::crypto::ByteArray;
-            let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
-        }
-        None
-    }
-}
-
 parameter_types! {
     pub const ChainId: u64 = 160;
     pub BlockGasLimit: U256 = U256::from(system::NORMAL_DISPATCH_RATIO * system::MAXIMUM_BLOCK_WEIGHT / evm::WEIGHT_PER_GAS);
@@ -373,7 +356,7 @@ impl pallet_evm::Config for Runtime {
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
-    type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
+    type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {

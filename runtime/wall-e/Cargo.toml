@@ -70,7 +70,7 @@ substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", bran
 
 [features]
 default = ["std", "aura"]
-aura = []
+aura = ["runtime-common/aura"]
 manual-seal = []
 std = [
     # Parity
