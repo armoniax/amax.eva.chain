@@ -35,7 +35,9 @@ primitives-core = { path = "../../primitives/core", default-features = false }
 runtime-common-constants = { path = "constants", default-features = false }
 
 [features]
-default = ["std"]
+default = ["std", "aura"]
+aura = []
+manual-seal = []
 std = [
     # Parity
     "codec/std",
@@ -64,4 +66,3 @@ std = [
     "primitives-core/std",
     "runtime-common-constants/std",
 ]
-aura = []
