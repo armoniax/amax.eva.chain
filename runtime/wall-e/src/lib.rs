@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::or_fun_call)]
+#![allow(clippy::or_fun_call, clippy::identity_op)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
@@ -24,8 +24,8 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU16, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
-    weights::constants::RocksDbWeight,
+    traits::{ConstU16, ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
@@ -44,9 +44,8 @@ use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     Signature,
 };
-
 use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
-use wall_e_runtime_constants::{balances, consensus, evm, fee, governance, system, time};
+use wall_e_runtime_constants::{currency, evm, fee, system, time};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -76,6 +75,11 @@ pub fn native_version() -> sp_version::NativeVersion {
 
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
+    pub const BlockHashCount: BlockNumber = 2400;
+    pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
+        ::with_sensible_defaults(system::MAXIMUM_BLOCK_WEIGHT, system::NORMAL_DISPATCH_RATIO);
+    pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
+        ::max_with_normal_ratio(system::MAXIMUM_BLOCK_LENGTH, system::NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
 }
 
@@ -83,9 +87,9 @@ impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
     type BaseCallFilter = frame_support::traits::Everything;
     /// Block & extrinsics weights: base values and limits.
-    type BlockWeights = system::BlockWeights;
+    type BlockWeights = BlockWeights;
     /// The maximum length of a block (in bytes).
-    type BlockLength = system::BlockLength;
+    type BlockLength = BlockLength;
     /// The ubiquitous origin type.
     type Origin = Origin;
     /// The aggregated dispatch type that is available for extrinsics.
@@ -107,7 +111,7 @@ impl frame_system::Config for Runtime {
     /// The ubiquitous event type.
     type Event = Event;
     /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-    type BlockHashCount = system::BlockHashCount;
+    type BlockHashCount = BlockHashCount;
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// Version of the runtime.
@@ -128,7 +132,11 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
     /// The set code logic, just the default since we're not a parachain.
     type OnSetCode = ();
-    type MaxConsumers = system::MaxConsumers;
+    type MaxConsumers = ConstU32<16>;
+}
+
+parameter_types! {
+    pub const MinimumPeriod: Moment = time::SLOT_DURATION / 2;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -138,9 +146,10 @@ impl pallet_timestamp::Config for Runtime {
     type OnTimestampSet = Aura;
     #[cfg(feature = "manual-seal")]
     type OnTimestampSet = ();
-    type MinimumPeriod = time::MinimumPeriod;
+    type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
+
 impl pallet_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -148,12 +157,19 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub const DepositBase: Balance = currency::deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 32);
+}
+
 impl pallet_multisig::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type Currency = Balances;
-    type DepositBase = fee::MultisigDepositBase;
-    type DepositFactor = fee::MultisigDepositFactor;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
     type MaxSignatories = ConstU16<100>;
     type WeightInfo = ();
 }
@@ -167,26 +183,38 @@ impl pallet_sudo::Config for Runtime {
 // Monetary.
 // ################################################################################################
 
+parameter_types! {
+    // TODO. need to check this value.
+    pub const ExistentialDeposit: Balance = 0;
+    pub const MaxLocks: u32 = 50;
+    pub const MaxReserves: u32 = 50;
+}
+
 impl pallet_balances::Config for Runtime {
-    /// The type for recording an account's balance.
     type Balance = Balance;
     type DustRemoval = ();
-    /// The ubiquitous event type.
     type Event = Event;
-    type ExistentialDeposit = balances::ExistentialDeposit;
+    type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-    type MaxLocks = balances::MaxLocks;
-    type MaxReserves = ();
+    type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
     type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+    // TODO. need to check this value.
+    pub const TransactionByteFee: Balance = 1;
+    // TODO. need to check this value.
+    pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     // TODO. need to check this value.
-    type OperationalFeeMultiplier = balances::OperationalFeeMultiplier;
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = fee::WeightToFee;
-    type LengthToFee = fee::WeightToFee;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
 }
 
@@ -201,9 +229,13 @@ impl_opaque_keys! {
     }
 }
 
+parameter_types! {
+    pub const MaxAuthorities: u32 = 32;
+}
+
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
-    type MaxAuthorities = consensus::MaxAuthorities;
+    type MaxAuthorities = MaxAuthorities;
     type DisabledValidators = ();
 }
 
@@ -224,12 +256,23 @@ impl pallet_grandpa::Config for Runtime {
     type HandleEquivocation = ();
 
     type WeightInfo = ();
-    type MaxAuthorities = consensus::MaxAuthorities;
+    type MaxAuthorities = MaxAuthorities;
 }
 
 // ################################################################################################
 // Governance.
 // ################################################################################################
+
+parameter_types! {
+    /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
+    /// Motions may end in fewer blocks if enough votes are cast to determine the result.
+    pub const MotionDuration: u32 = 1 * time::DAYS;
+    /// The maximum number of technical committee members.
+    pub const MaxProposals: u32 = 32;
+    /// The maximum number of technical committee members.
+    pub const TechnicalMaxMembers: u32 = 30;
+}
+
 type TechnicalCollective = pallet_collective::Instance1;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
     type Origin = Origin;
@@ -237,10 +280,10 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
     type Event = Event;
     /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
     /// Motions may end in fewer blocks if enough votes are cast to determine the result.
-    type MotionDuration = governance::MotionDuration;
+    type MotionDuration = MotionDuration;
     /// The maximum number of Proposals that can be open in the technical committee at once.
-    type MaxProposals = governance::MaxProposals;
-    type MaxMembers = governance::TechnicalMaxMembers;
+    type MaxProposals = MaxProposals;
+    type MaxMembers = TechnicalMaxMembers;
     type DefaultVote = pallet_collective::PrimeDefaultVote;
     type WeightInfo = ();
 }
@@ -261,7 +304,7 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
     type PrimeOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
     type MembershipInitialized = TechnicalCommittee;
     type MembershipChanged = TechnicalCommittee;
-    type MaxMembers = governance::TechnicalMaxMembers;
+    type MaxMembers = TechnicalMaxMembers;
     type WeightInfo = ();
 }
 
@@ -289,6 +332,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 
 parameter_types! {
     pub const ChainId: u64 = 161;
+    pub BlockGasLimit: U256 = U256::from(system::NORMAL_DISPATCH_RATIO * system::MAXIMUM_BLOCK_WEIGHT / evm::WEIGHT_PER_GAS);
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
 }
 
@@ -304,7 +348,7 @@ impl pallet_evm::Config for Runtime {
     type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
-    type BlockGasLimit = evm::BlockGasLimit;
+    type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
     type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
@@ -315,11 +359,16 @@ impl pallet_ethereum::Config for Runtime {
     type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
 }
 
+parameter_types! {
+    pub IsActive: bool = true;
+    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+}
+
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
     type Threshold = evm_config::BaseFeeThreshold;
-    type IsActive = evm::IsActive;
-    type DefaultBaseFeePerGas = evm::DefaultBaseFeePerGas;
+    type IsActive = IsActive;
+    type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -651,7 +700,7 @@ impl_runtime_apis! {
             // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
             // right here and right now.
             let weight = Executive::try_runtime_upgrade().unwrap();
-            (weight, system::BlockWeights::get().max_block)
+            (weight, BlockWeights::get().max_block)
         }
 
         fn execute_block_no_check(block: Block) -> frame_support::weights::Weight {

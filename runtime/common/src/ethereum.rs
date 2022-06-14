@@ -1,8 +1,9 @@
 use codec::{Decode, Encode};
 use sp_runtime::traits::Extrinsic;
+use sp_std::marker::PhantomData;
 
 /// EthTransaction for rpc.
-pub struct EthTransactionConverter<UE, R>(sp_std::marker::PhantomData<(UE, R)>);
+pub struct EthTransactionConverter<UE, R>(PhantomData<(UE, R)>);
 impl<UE, R> EthTransactionConverter<UE, R> {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
