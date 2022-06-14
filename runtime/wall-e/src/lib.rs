@@ -336,19 +336,6 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
 // EVM compatibility.
 // ################################################################################################
 
-// pub struct CoinbaseAuthor;
-// impl FindAuthor<H160> for CoinbaseAuthor {
-//     fn find_author<'a, I>(_digests: I) -> Option<H160>
-//     where
-//         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-//     {
-//         #[cfg(feature = "aura")]
-//         return pallet_session::FindAccountFromAuthorIndex::<Runtime,
-// Aura>::find_author(_digests).map(Into::into);         #[cfg(not(feature = "aura"))]
-//         None
-//     }
-// }
-
 parameter_types! {
     pub const ChainId: u64 = 161;
     pub BlockGasLimit: U256 = U256::from(system::NORMAL_DISPATCH_RATIO * system::MAXIMUM_BLOCK_WEIGHT / evm::WEIGHT_PER_GAS);
