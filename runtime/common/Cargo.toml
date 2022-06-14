@@ -8,16 +8,20 @@ license = "GPL-3.0"
 [dependencies]
 # Parity
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+log = { version = "0.4.17", default-features = false }
+scale-info = { version = "2.0.1", default-features = false, features = ["derive"] }
 
 # Substrate
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+sp-staking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 ## Substrate FRAME
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 # Frontier
 fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 pallet-base-fee = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
@@ -35,15 +39,19 @@ default = ["std"]
 std = [
     # Parity
     "codec/std",
+    "log/std",
+    "scale-info/std",
     # Substrate
     "sp-consensus-aura/std",
     "sp-finality-grandpa/std",
     "sp-core/std",
     "sp-runtime/std",
+    "sp-staking/std",
     "sp-std/std",
     ## Substrate FRAME
     "frame-support/std",
     "frame-system/std",
+    "pallet-session/std",
     # Frontier
     "fp-rpc/std",
     "pallet-base-fee/std",
@@ -56,3 +64,4 @@ std = [
     "primitives-core/std",
     "runtime-common-constants/std",
 ]
+aura = []

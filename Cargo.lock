@@ -1647,6 +1647,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-membership",
  "pallet-multisig",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -1675,6 +1676,7 @@ dependencies = [
 name = "eva-runtime-constants"
 version = "0.1.0"
 dependencies = [
+ "primitives-core",
  "runtime-common-constants",
 ]
 
@@ -5716,19 +5718,23 @@ dependencies = [
  "fp-rpc",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-base-fee",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-modexp",
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
+ "pallet-session",
  "parity-scale-codec",
  "primitives-core",
  "runtime-common-constants",
+ "scale-info",
  "sp-consensus-aura",
  "sp-core",
  "sp-finality-grandpa",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 
@@ -8754,6 +8760,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-membership",
  "pallet-multisig",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -8783,6 +8790,7 @@ dependencies = [
 name = "wall-e-runtime-constants"
 version = "0.1.0"
 dependencies = [
+ "primitives-core",
  "runtime-common-constants",
 ]
 

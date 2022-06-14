@@ -14,17 +14,17 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        PostDispatchInfoOf,
+        OpaqueKeys, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, ConsensusEngineId, Permill,
+    ApplyExtrinsicResult, Permill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU16, ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
+    traits::{ConstU16, ConstU32, EnsureOneOf, KeyOwnerProofSystem},
     weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
@@ -44,7 +44,10 @@ use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     Signature,
 };
-use runtime_common::{evm_config, precompiles::FrontierPrecompiles};
+use runtime_common::{
+    ethereum::CoinbaseAuthor, evm_config, pallets::authorities as pallet_authorities,
+    precompiles::FrontierPrecompiles,
+};
 use wall_e_runtime_constants::{currency, evm, fee, system, time};
 
 // To learn more about runtime versioning and what each of the following value means:
@@ -222,15 +225,8 @@ impl pallet_transaction_payment::Config for Runtime {
 // Consensus.
 // ################################################################################################
 
-impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub aura: Aura,
-        pub grandpa: Grandpa,
-    }
-}
-
 parameter_types! {
-    pub const MaxAuthorities: u32 = 32;
+    pub const MaxAuthorities: u32 = 21;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -259,6 +255,34 @@ impl pallet_grandpa::Config for Runtime {
     type MaxAuthorities = MaxAuthorities;
 }
 
+impl_opaque_keys! {
+    pub struct SessionKeys {
+        pub aura: Aura,
+        pub grandpa: Grandpa,
+    }
+}
+
+parameter_types! {
+    pub const Period: BlockNumber = 1 * time::HOURS;
+}
+
+impl pallet_session::Config for Runtime {
+    type Event = Event;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = Authorities;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Period>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Period>;
+    type SessionManager = Authorities;
+    type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = SessionKeys;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_authorities::Config for Runtime {
+    type Event = Event;
+    type MaxAuthorities = MaxAuthorities;
+}
+
 // ################################################################################################
 // Governance.
 // ################################################################################################
@@ -266,7 +290,7 @@ impl pallet_grandpa::Config for Runtime {
 parameter_types! {
     /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
     /// Motions may end in fewer blocks if enough votes are cast to determine the result.
-    pub const MotionDuration: u32 = 1 * time::DAYS;
+    pub const MotionDuration: BlockNumber = 1 * time::DAYS;
     /// The maximum number of technical committee members.
     pub const MaxProposals: u32 = 32;
     /// The maximum number of technical committee members.
@@ -312,23 +336,18 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
 // EVM compatibility.
 // ################################################################################################
 
-pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(_digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        // TODO change the implementation after bringing in the Session or related pallet to get
-        // accountid.
-        #[cfg(feature = "aura")]
-        if let Some(author_index) = F::find_author(_digests) {
-            use sp_core::crypto::ByteArray;
-            let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
-        }
-        None
-    }
-}
+// pub struct CoinbaseAuthor;
+// impl FindAuthor<H160> for CoinbaseAuthor {
+//     fn find_author<'a, I>(_digests: I) -> Option<H160>
+//     where
+//         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+//     {
+//         #[cfg(feature = "aura")]
+//         return pallet_session::FindAccountFromAuthorIndex::<Runtime,
+// Aura>::find_author(_digests).map(Into::into);         #[cfg(not(feature = "aura"))]
+//         None
+//     }
+// }
 
 parameter_types! {
     pub const ChainId: u64 = 161;
@@ -351,7 +370,7 @@ impl pallet_evm::Config for Runtime {
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
-    type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
+    type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {
@@ -391,6 +410,8 @@ construct_runtime!(
         // Consensus.
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
+        Session: pallet_session = 22,
+        Authorities: pallet_authorities = 23,
 
         // Governance.
         TechnicalCommittee: pallet_collective::<Instance1> = 30,

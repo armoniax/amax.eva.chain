@@ -36,6 +36,7 @@ pallet-collective = { git = "https://github.com/paritytech/substrate", branch = 
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-membership = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-multisig = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
@@ -69,7 +70,7 @@ substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", bran
 
 [features]
 default = ["std", "aura"]
-aura = []
+aura = ["runtime-common/aura"]
 manual-seal = []
 std = [
     # Parity
@@ -98,6 +99,7 @@ std = [
     "pallet-grandpa/std",
     "pallet-membership/std",
     "pallet-multisig/std",
+    "pallet-session/std",
     "pallet-sudo/std",
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
@@ -147,6 +149,7 @@ try-runtime = [
     "pallet-grandpa/try-runtime",
     "pallet-membership/try-runtime",
     "pallet-multisig/try-runtime",
+    "pallet-session/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
     "pallet-utility/try-runtime",

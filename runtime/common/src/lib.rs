@@ -2,6 +2,7 @@
 
 pub mod ethereum;
 pub mod evm_config;
+pub mod pallets;
 pub mod precompiles;
 
 // Substrate
