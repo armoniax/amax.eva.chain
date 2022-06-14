@@ -16,6 +16,10 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
+    // 0 Alith
+    // 1 Baltathar
+    // 2 Charleth
+    // 3 Dorothy
     let accounts = generate_dev_accounts(10);
 
     Ok(ChainSpec::from_genesis(
@@ -90,8 +94,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Protocol ID
         None,
-        // Properties
+        // Fork ID.
         None,
+        // Properties
         Some(super::properties()),
         // Extensions
         None,
