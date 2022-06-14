@@ -1,5 +1,6 @@
-// chain-spec
+/// Eva chain spec.
 pub mod eva;
+/// Wall-e chain spec.
 pub mod wall_e;
 
 pub(crate) mod key_helper;
