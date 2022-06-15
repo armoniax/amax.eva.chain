@@ -1,5 +1,5 @@
 [package]
-name = "amax-eva-runtime-constants"
+name = "runtime-common-constants"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
@@ -15,7 +15,7 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkad
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 
 # Local
-primitives-core = { path = "../../primitives/core", default-features = false }
+primitives-core = { path = "../../../primitives/core", default-features = false }
 
 [features]
 default = ["std"]
