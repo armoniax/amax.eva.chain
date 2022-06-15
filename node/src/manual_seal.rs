@@ -14,7 +14,7 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
         inherent_data: &mut sp_inherents::InherentData,
     ) -> Result<(), sp_inherents::Error> {
         TIMESTAMP.with(|x| {
-            *x.borrow_mut() += amax_eva_runtime::constants::time::SLOT_DURATION;
+            *x.borrow_mut() += amax_eva_runtime::SLOT_DURATION;
             inherent_data.put_data(INHERENT_IDENTIFIER, &*x.borrow())
         })
     }

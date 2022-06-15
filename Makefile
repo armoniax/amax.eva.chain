@@ -32,7 +32,7 @@ release: fmt
 	cargo build --release
 
 test-release: fmt
-	cargo build --release --no-default-features --features manual-seal
+	cargo build --release --no-default-features --features manual-seal,rpc_binary_search_estimate 
 
 test: fmt
 	cargo test --all
