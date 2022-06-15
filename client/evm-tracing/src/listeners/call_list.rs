@@ -2,11 +2,11 @@ use crate::{
     formatters::blockscout::{BlockscoutCall as Call, BlockscoutCallInner as CallInner},
     types::{CallResult, CallType, ContextType, CreateResult},
 };
-use evm_tracing_events::{
+use ethereum_types::{H160, U256};
+use primitives_evm_tracing_events::{
     runtime::{Capture, ExitError, ExitReason, ExitSucceed},
     Event, EvmEvent, GasometerEvent, Listener as ListenerT, RuntimeEvent, StepEventFilter,
 };
-use ethereum_types::{H160, U256};
 use std::{collections::btree_map::BTreeMap, vec, vec::Vec};
 
 /// Enum of the different "modes" of tracer for multiple runtime versions and
@@ -110,7 +110,7 @@ impl Default for Listener {
 
 impl Listener {
     pub fn using<R, F: FnOnce() -> R>(&mut self, f: F) -> R {
-        evm_tracing_events::using(self, f)
+        primitives_evm_tracing_events::using(self, f)
     }
 
     /// Called at the end of each transaction when tracing.
@@ -149,7 +149,7 @@ impl Listener {
                             res,
                         },
                     }
-                }
+                },
                 ContextType::Create => {
                     let res = CreateResult::Error {
 							error: b"early exit (out of gas, stack overflow, direct call to precompile, ...)".to_vec(),
@@ -164,7 +164,7 @@ impl Listener {
                         from: context.from,
                         inner: CallInner::Create { init: context.data.into(), res },
                     }
-                }
+                },
             };
 
             self.insert_entry(context.entries_index, entry);
@@ -202,20 +202,20 @@ impl Listener {
 
     pub fn gasometer_event(&mut self, event: GasometerEvent) {
         match event {
-            GasometerEvent::RecordCost { snapshot, .. }
-            | GasometerEvent::RecordDynamicCost { snapshot, .. }
-            | GasometerEvent::RecordStipend { snapshot, .. } => {
+            GasometerEvent::RecordCost { snapshot, .. } |
+            GasometerEvent::RecordDynamicCost { snapshot, .. } |
+            GasometerEvent::RecordStipend { snapshot, .. } => {
                 if let Some(context) = self.context_stack.last_mut() {
                     if context.start_gas.is_none() {
                         context.start_gas = Some(snapshot.gas());
                     }
                     context.gas = snapshot.gas();
                 }
-            }
+            },
             GasometerEvent::RecordTransaction { cost, .. } => {
                 self.transaction_cost = cost;
                 self.record_transaction_event_only = true;
-            }
+            },
             // We ignore other kinds of message if any (new ones may be added in the future).
             #[allow(unreachable_patterns)]
             _ => (),
@@ -228,14 +228,14 @@ impl Listener {
                 if let Some(ContextType::Call(call_type)) = ContextType::from(opcode) {
                     self.call_type = Some(call_type)
                 }
-            }
+            },
             RuntimeEvent::StepResult { result: Err(Capture::Exit(reason)), return_value } => {
                 if let Some((key, entry)) = self.pop_context_to_entry(reason, return_value) {
                     match self.version {
                         TracingVersion::Legacy => {
                             // In Legacy mode we directly insert the entry.
                             self.insert_entry(key, entry);
-                        }
+                        },
                         TracingVersion::EarlyTransact => {
                             // In EarlyTransact mode this context must be used if this event is
                             // emitted. However the context of `EvmEvent::Exit` must be used if
@@ -243,10 +243,10 @@ impl Listener {
                             // entry in a temporary value, and deal with it in `EvmEvent::Exit` that
                             // will be called in all cases.
                             self.step_result_entry = Some((key, entry));
-                        }
+                        },
                     }
                 }
-            }
+            },
             // We ignore other kinds of message if any (new ones may be added in the future).
             #[allow(unreachable_patterns)]
             _ => (),
@@ -277,7 +277,7 @@ impl Listener {
 
                 self.entries_next_index += 1;
                 self.skip_next_context = true;
-            }
+            },
 
             EvmEvent::TransactCreate { caller, value, init_code, address, .. } => {
                 self.record_transaction_event_only = false;
@@ -301,7 +301,7 @@ impl Listener {
 
                 self.entries_next_index += 1;
                 self.skip_next_context = true;
-            }
+            },
 
             EvmEvent::TransactCreate2 { caller, value, init_code, address, .. } => {
                 self.record_transaction_event_only = false;
@@ -325,7 +325,7 @@ impl Listener {
 
                 self.entries_next_index += 1;
                 self.skip_next_context = true;
-            }
+            },
 
             EvmEvent::Call { input, is_static, context, .. } => {
                 self.record_transaction_event_only = false;
@@ -367,7 +367,7 @@ impl Listener {
                 } else {
                     self.skip_next_context = false;
                 }
-            }
+            },
 
             EvmEvent::Create {
                 caller,
@@ -410,7 +410,7 @@ impl Listener {
                 } else {
                     self.skip_next_context = false;
                 }
-            }
+            },
             EvmEvent::Suicide { address, target, balance } => {
                 let trace_address = if let Some(context) = self.context_stack.last_mut() {
                     let mut trace_address = context.trace_address.clone();
@@ -437,7 +437,7 @@ impl Listener {
                     },
                 );
                 self.entries_next_index += 1;
-            }
+            },
             EvmEvent::Exit { reason, return_value } => {
                 // We know we're in `TracingVersion::EarlyTransact` mode.
 
@@ -451,7 +451,7 @@ impl Listener {
                 if let Some((key, entry)) = entry {
                     self.insert_entry(key, entry);
                 }
-            }
+            },
             // We ignore other kinds of message if any (new ones may be added in the future).
             #[allow(unreachable_patterns)]
             _ => (),
@@ -484,13 +484,13 @@ impl Listener {
                         let res = match &reason {
                             ExitReason::Succeed(ExitSucceed::Returned) => {
                                 CallResult::Output(return_value.into())
-                            }
+                            },
                             ExitReason::Succeed(_) => CallResult::Output(Default::default()),
                             ExitReason::Error(error) => CallResult::Error(error_message(error)),
 
                             ExitReason::Revert(_) => {
                                 CallResult::Error(b"execution reverted".to_vec())
-                            }
+                            },
                             ExitReason::Fatal(_) => CallResult::Error(vec![]),
                         };
 
@@ -508,7 +508,7 @@ impl Listener {
                                 res,
                             },
                         }
-                    }
+                    },
                     ContextType::Create => {
                         let res = match &reason {
                             ExitReason::Succeed(_) => CreateResult::Success {
@@ -517,10 +517,10 @@ impl Listener {
                             },
                             ExitReason::Error(error) => {
                                 CreateResult::Error { error: error_message(error) }
-                            }
+                            },
                             ExitReason::Revert(_) => {
                                 CreateResult::Error { error: b"execution reverted".to_vec() }
-                            }
+                            },
                             ExitReason::Fatal(_) => CreateResult::Error { error: vec![] },
                         };
 
@@ -533,7 +533,7 @@ impl Listener {
                             from: context.from,
                             inner: CallInner::Create { init: context.data.into(), res },
                         }
-                    }
+                    },
                 },
             ))
         } else {
@@ -576,7 +576,7 @@ impl ListenerT for Listener {
                 } else {
                     self.call_list_first_transaction = false;
                 }
-            }
+            },
         };
     }
 
@@ -589,13 +589,13 @@ impl ListenerT for Listener {
 #[allow(unused)]
 mod tests {
     use super::*;
-    use evm_tracing_events::{
+    use ethereum_types::H256;
+    use primitives_evm_tracing_events::{
         evm::CreateScheme,
         gasometer::Snapshot,
         runtime::{Memory, Stack},
         Context as EvmContext,
     };
-    use ethereum_types::H256;
 
     enum TestEvmEvent {
         Call,
@@ -676,7 +676,7 @@ mod tests {
             },
             TestEvmEvent::Exit => {
                 EvmEvent::Exit { reason: exit_reason.unwrap(), return_value: Vec::new() }
-            }
+            },
             TestEvmEvent::TransactCall => EvmEvent::TransactCall {
                 caller: H160::default(),
                 address: H160::default(),
@@ -713,7 +713,7 @@ mod tests {
             },
             TestRuntimeEvent::StepResult => {
                 RuntimeEvent::StepResult { result: Ok(()), return_value: Vec::new() }
-            }
+            },
             TestRuntimeEvent::SLoad => RuntimeEvent::SLoad {
                 address: H160::default(),
                 index: H256::default(),
@@ -731,13 +731,13 @@ mod tests {
         match event_type {
             TestGasometerEvent::RecordCost => {
                 GasometerEvent::RecordCost { cost: 0u64, snapshot: test_snapshot() }
-            }
+            },
             TestGasometerEvent::RecordRefund => {
                 GasometerEvent::RecordRefund { refund: 0i64, snapshot: test_snapshot() }
-            }
+            },
             TestGasometerEvent::RecordStipend => {
                 GasometerEvent::RecordStipend { stipend: 0u64, snapshot: test_snapshot() }
-            }
+            },
             TestGasometerEvent::RecordDynamicCost => GasometerEvent::RecordDynamicCost {
                 gas_cost: 0u64,
                 memory_gas: 0u64,
@@ -746,7 +746,7 @@ mod tests {
             },
             TestGasometerEvent::RecordTransaction => {
                 GasometerEvent::RecordTransaction { cost: 0u64, snapshot: test_snapshot() }
-            }
+            },
         }
     }
 
@@ -1030,7 +1030,8 @@ mod tests {
         listener.finish_transaction();
         assert_eq!(listener.entries.len(), 1);
         // Each nested call contains 11 elements in the callstack (main + 10 subcalls).
-        // There are 5 main nested calls for a total of 56 elements in the callstack: 1 main + 55 nested.
+        // There are 5 main nested calls for a total of 56 elements in the callstack: 1 main + 55
+        // nested.
         assert_eq!(listener.entries[0].len(), (depth * (subdepth + 1)) + 1);
     }
 }

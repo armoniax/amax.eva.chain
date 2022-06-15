@@ -33,8 +33,14 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
     /// Only enable the benchmarking host functions when we actually want to benchmark.
     #[cfg(feature = "runtime-benchmarks")]
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+
     /// Otherwise we only use the default Substrate host functions.
     #[cfg(not(feature = "runtime-benchmarks"))]
+    #[cfg(feature = "evm-tracing")]
+    type ExtendHostFunctions = primitives_evm_ext::evm_ext::HostFunctions;
+
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    #[cfg(not(feature = "evm-tracing"))]
     type ExtendHostFunctions = ();
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
@@ -334,6 +340,22 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
         let overrides = overrides.clone();
         let fee_history_cache = fee_history_cache.clone();
         let max_past_logs = cli.run.max_past_logs;
+        let tracing_requesters = crate::tracing::rpc_requesters(
+            &cli.run.ethapi,
+            &crate::tracing::RpcConfig {
+                ethapi: cli.run.ethapi.clone(),
+                ethapi_max_permits: cli.run.ethapi_max_permits,
+                ethapi_trace_cache_duration: cli.run.ethapi_trace_cache_duration,
+            },
+            crate::tracing::SpawnTasksParams {
+                task_manager: &task_manager,
+                client: client.clone(),
+                substrate_backend: backend.clone(),
+                frontier_backend: frontier_backend.clone(),
+                overrides: overrides.clone(),
+            },
+        );
+        let trace_filter_max_count = cli.run.ethapi_trace_max_count;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -347,6 +369,8 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
                 filter_pool: filter_pool.clone(),
                 backend: frontier_backend.clone(),
                 max_past_logs,
+                tracing_requesters: tracing_requesters.clone(),
+                trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
                 overrides: overrides.clone(),
@@ -552,6 +576,22 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
         let overrides = overrides.clone();
         let fee_history_cache = fee_history_cache.clone();
         let max_past_logs = cli.run.max_past_logs;
+        let tracing_requesters = crate::tracing::rpc_requesters(
+            &cli.run.ethapi,
+            &crate::tracing::RpcConfig {
+                ethapi: cli.run.ethapi.clone(),
+                ethapi_max_permits: cli.run.ethapi_max_permits,
+                ethapi_trace_cache_duration: cli.run.ethapi_trace_cache_duration,
+            },
+            crate::tracing::SpawnTasksParams {
+                task_manager: &task_manager,
+                client: client.clone(),
+                substrate_backend: backend.clone(),
+                frontier_backend: frontier_backend.clone(),
+                overrides: overrides.clone(),
+            },
+        );
+        let trace_filter_max_count = cli.run.ethapi_trace_max_count;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -565,6 +605,8 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
                 filter_pool: filter_pool.clone(),
                 backend: frontier_backend.clone(),
                 max_past_logs,
+                tracing_requesters: tracing_requesters.clone(),
+                trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
                 overrides: overrides.clone(),

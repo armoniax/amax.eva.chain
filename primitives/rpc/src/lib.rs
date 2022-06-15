@@ -8,7 +8,3 @@ pub mod debug;
 pub mod txpool;
 
 pub use self::{debug::*, txpool::*};
-
-pub trait ConvertDebugTx<E, Moment> {
-    fn convert_set_next_block_timestamp_extrinsic(&self, timestamp: Moment) -> E;
-}

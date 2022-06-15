@@ -47,7 +47,7 @@ impl super::ResponseFormatter for Formatter {
                                         CallType::CallCode => "CALLCODE".as_bytes().to_vec(),
                                         CallType::DelegateCall => {
                                             "DELEGATECALL".as_bytes().to_vec()
-                                        }
+                                        },
                                         CallType::StaticCall => "STATICCALL".as_bytes().to_vec(),
                                     },
                                     to,
@@ -55,7 +55,7 @@ impl super::ResponseFormatter for Formatter {
                                     res,
                                     value: Some(value),
                                 }
-                            }
+                            },
                             BlockscoutCallInner::Create { init, res } => CallTracerInner::Create {
                                 input: init,
                                 error: match res {
@@ -71,7 +71,7 @@ impl super::ResponseFormatter for Formatter {
                                 output: match res {
                                     CreateResult::Success { created_contract_code, .. } => {
                                         Some(created_contract_code)
-                                    }
+                                    },
                                     CreateResult::Error { .. } => None,
                                 },
                                 value,
@@ -83,7 +83,7 @@ impl super::ResponseFormatter for Formatter {
                                     to,
                                     call_type: "SELFDESTRUCT".as_bytes().to_vec(),
                                 }
-                            }
+                            },
                         },
                         calls: Vec::new(),
                     })
@@ -134,7 +134,7 @@ impl super::ResponseFormatter for Formatter {
                 //
                 // We consider an item to be `Ordering::Less` when:
                 // 	- Is closer to the root or
-                //	- Is greater than its sibling.
+                // 	- Is greater than its sibling.
                 result.sort_by(|a, b| match (a, b) {
                     (
                         Call::CallTracer(CallTracerCall { trace_address: Some(a), .. }),
@@ -158,7 +158,7 @@ impl super::ResponseFormatter for Formatter {
                         } else {
                             Ordering::Greater
                         }
-                    }
+                    },
                     _ => unreachable!(),
                 });
                 // Stack pop-and-push.

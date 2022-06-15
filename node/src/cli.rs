@@ -60,6 +60,31 @@ pub struct RunCmd {
     /// Maximum fee history cache size.
     #[clap(long, default_value = "2048")]
     pub fee_history_limit: u64,
+
+    /// Number of concurrent tracing tasks. Meant to be shared by both "debug" and "trace" modules.
+    #[clap(long, default_value = "10")]
+    pub ethapi_max_permits: u32,
+
+    /// Duration (in seconds) after which the cache of `trace_filter` for a given block will be
+    /// discarded.
+    #[clap(long, default_value = "300")]
+    pub ethapi_trace_cache_duration: u64,
+
+    /// Maximum number of trace entries a single request of `trace_filter` is allowed to return.
+    /// A request asking for more or an unbounded one going over this limit will both return an
+    /// error.
+    #[clap(long, default_value = "500")]
+    pub ethapi_trace_max_count: u32,
+
+    /// Enable EVM tracing module on a non-authority node.
+    #[clap(
+        long,
+        conflicts_with = "validator",
+        use_value_delimiter = true,
+        require_value_delimiter = true,
+        multiple_values = true
+    )]
+    pub ethapi: Vec<crate::tracing::EthApiExt>,
 }
 
 /// Armonia Eva Node subcommand.

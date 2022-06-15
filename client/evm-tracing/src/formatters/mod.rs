@@ -8,7 +8,7 @@ pub use call_tracer::Formatter as CallTracer;
 pub use raw::Formatter as Raw;
 pub use trace_filter::Formatter as TraceFilter;
 
-use evm_tracing_events::Listener;
+use primitives_evm_tracing_events::Listener;
 use serde::Serialize;
 
 pub trait ResponseFormatter {

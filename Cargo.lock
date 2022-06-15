@@ -104,6 +104,7 @@ dependencies = [
 name = "amax-eva"
 version = "0.1.0"
 dependencies = [
+ "amax-eva-rpc-trace",
  "amax-eva-runtime",
  "async-trait",
  "clap",
@@ -123,6 +124,8 @@ dependencies = [
  "log",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "primitives-evm-ext",
+ "primitives-rpc",
  "sc-basic-authorship",
  "sc-cli",
  "sc-client-api",
@@ -152,6 +155,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "tiny-bip39",
  "tiny-hderive",
+ "tokio",
  "try-runtime-cli",
 ]
 
@@ -161,10 +165,10 @@ version = "0.1.0"
 dependencies = [
  "amax-eva-rpc-core-types",
  "ethereum-types",
- "evm-tracing-events",
  "hex",
  "log",
  "parity-scale-codec",
+ "primitives-evm-tracing-events",
  "serde",
 ]
 
@@ -176,8 +180,7 @@ dependencies = [
  "amax-eva-rpc-core-types",
  "ethereum-types",
  "futures 0.3.21",
- "jsonrpc-core",
- "jsonrpc-derive",
+ "jsonrpsee",
  "serde",
 ]
 
@@ -195,6 +198,32 @@ dependencies = [
  "serde_json",
  "sha3 0.10.1",
  "sp-io",
+]
+
+[[package]]
+name = "amax-eva-rpc-trace"
+version = "0.1.0"
+dependencies = [
+ "amax-eva-client-evm-tracing",
+ "amax-eva-rpc-core-trace",
+ "amax-eva-rpc-core-types",
+ "ethereum",
+ "ethereum-types",
+ "fc-db",
+ "fc-rpc",
+ "fp-rpc",
+ "futures 0.3.21",
+ "jsonrpsee",
+ "primitives-rpc",
+ "sc-client-api",
+ "sc-utils",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-runtime",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -227,6 +256,8 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
  "primitives-core",
+ "primitives-evm-tracer",
+ "primitives-rpc",
  "scale-info",
  "sp-api",
  "sp-block-builder",
@@ -1814,20 +1845,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "evm-tracing-events"
-version = "0.1.0"
-dependencies = [
- "environmental",
- "ethereum",
- "ethereum-types",
- "evm 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm-gasometer 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm-runtime 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-scale-codec",
- "sp-runtime-interface",
-]
-
-[[package]]
 name = "exit-future"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2279,7 +2296,7 @@ version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
  "frame-support-procedural-tools-derive",
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -3047,33 +3064,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-core"
-version = "18.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
-dependencies = [
- "futures 0.3.21",
- "futures-executor",
- "futures-util",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
-name = "jsonrpc-derive"
-version = "18.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b939a78fa820cdfcb7ee7484466746a7377760970f6f9c6fe19f9edcc8a38d2"
-dependencies = [
- "proc-macro-crate 0.1.5",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "jsonrpsee"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3161,7 +3151,7 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b8d7f449cab3b747f12c3efc27f5cad537f3b597c6a3838b0fac628f4bf730a"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -4206,7 +4196,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc076939022111618a5026d3be019fd8b366e76314538ff9a1b59ffbcbf98bcd"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -4507,7 +4497,7 @@ version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b0498641e53dd6ac1a4f22547548caa6864cc4933784319cd1775271c5a46ce"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -4872,7 +4862,7 @@ version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c45ed1f39709f5a89338fab50e59816b2e8815f5bb58276e7ddf9afd495f73f8"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -5221,6 +5211,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "primitives-evm-ext"
+version = "0.1.0"
+dependencies = [
+ "ethereum-types",
+ "parity-scale-codec",
+ "primitives-evm-tracing-events",
+ "sp-externalities",
+ "sp-runtime-interface",
+ "sp-std",
+]
+
+[[package]]
+name = "primitives-evm-tracer"
+version = "0.1.0"
+dependencies = [
+ "evm 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "evm-gasometer 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "evm-runtime 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-scale-codec",
+ "primitives-evm-ext",
+ "primitives-evm-tracing-events",
+ "sp-std",
+]
+
+[[package]]
+name = "primitives-evm-tracing-events"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "ethereum",
+ "ethereum-types",
+ "evm 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "evm-gasometer 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "evm-runtime 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-scale-codec",
+ "sp-runtime-interface",
+]
+
+[[package]]
 name = "primitives-rpc"
 version = "0.1.0"
 dependencies = [
@@ -5230,15 +5259,6 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "proc-macro-crate"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d6ea3c4595b96363c13943497db34af4460fb474a95c43f4446ad341b8c9785"
-dependencies = [
- "toml",
 ]
 
 [[package]]
@@ -6008,7 +6028,7 @@ name = "sc-chain-spec-derive"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -6801,7 +6821,7 @@ name = "sc-tracing-proc-macro"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -6880,7 +6900,7 @@ version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50e334bb10a245e28e5fd755cabcafd96cfcd167c99ae63a46924ca8d8703a3c"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -7289,7 +7309,7 @@ version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
  "blake2",
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -7722,7 +7742,7 @@ version = "5.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
  "Inflector",
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",

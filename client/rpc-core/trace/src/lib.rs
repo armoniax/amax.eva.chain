@@ -1,7 +1,5 @@
 use ethereum_types::{H160, H256};
-use futures::future::BoxFuture;
-use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use serde::Deserialize;
 
 use amax_eva_client_evm_tracing::types::{
@@ -10,44 +8,36 @@ use amax_eva_client_evm_tracing::types::{
 };
 use amax_eva_rpc_core_types::RequestBlockId;
 
-pub use rpc_impl_Trace::gen_server::Trace as TraceServer;
-
 #[rpc(server)]
+#[jsonrpsee::core::async_trait]
 pub trait Trace {
     /// Returns all traces of given transaction,
-    #[rpc(name = "trace_transaction")]
-    fn transaction_traces(
-        &self,
-        hash: H256,
-    ) -> BoxFuture<'static, Result<Option<Vec<TransactionTrace>>>>;
+    #[method(name = "trace_transaction")]
+    async fn transaction_traces(&self, hash: H256) -> RpcResult<Option<Vec<TransactionTrace>>>;
 
     /// Returns traces matching given filter,
-    #[rpc(name = "trace_filter")]
-    fn filter(&self, filter: FilterRequest) -> BoxFuture<'static, Result<Vec<TransactionTrace>>>;
+    #[method(name = "trace_filter")]
+    async fn filter(&self, filter: FilterRequest) -> RpcResult<Vec<TransactionTrace>>;
 
     /// Returns all traces produced at given block,
-    #[rpc(name = "trace_block")]
-    fn block_traces(
+    #[method(name = "trace_block")]
+    async fn block_traces(
         &self,
         number: RequestBlockId,
-    ) -> BoxFuture<'static, Result<Option<Vec<TransactionTrace>>>>;
+    ) -> RpcResult<Option<Vec<TransactionTrace>>>;
 
     /// Executes the transaction with the given hash and returns a number of possible traces for it.
-    #[rpc(name = "trace_replayTransaction")]
-    fn replay_transaction(
-        &self,
-        _: H256,
-        _: Vec<String>,
-    ) -> BoxFuture<'static, Result<TraceResults>>;
+    #[method(name = "trace_replayTransaction")]
+    async fn replay_transaction(&self, hash: H256, opts: Vec<String>) -> RpcResult<TraceResults>;
 
     /// Executes all the transactions at the given block and returns a number of possible traces for
     /// each transaction.
-    #[rpc(name = "trace_replayBlockTransactions")]
-    fn replay_block_transactions(
+    #[method(name = "trace_replayBlockTransactions")]
+    async fn replay_block_transactions(
         &self,
-        _: RequestBlockId,
-        _: Vec<String>,
-    ) -> BoxFuture<'static, Result<Vec<TraceResultsWithTransactionHash>>>;
+        hash: RequestBlockId,
+        opts: Vec<String>,
+    ) -> RpcResult<Vec<TraceResultsWithTransactionHash>>;
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize)]

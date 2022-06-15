@@ -44,13 +44,13 @@ impl From<evm_gasometer::tracing::Event> for GasometerEvent {
         match i {
             evm_gasometer::tracing::Event::RecordCost { cost, snapshot } => {
                 Self::RecordCost { cost, snapshot: snapshot.into() }
-            }
+            },
             evm_gasometer::tracing::Event::RecordRefund { refund, snapshot } => {
                 Self::RecordRefund { refund, snapshot: snapshot.into() }
-            }
+            },
             evm_gasometer::tracing::Event::RecordStipend { stipend, snapshot } => {
                 Self::RecordStipend { stipend, snapshot: snapshot.into() }
-            }
+            },
             evm_gasometer::tracing::Event::RecordDynamicCost {
                 gas_cost,
                 memory_gas,
@@ -64,7 +64,7 @@ impl From<evm_gasometer::tracing::Event> for GasometerEvent {
             },
             evm_gasometer::tracing::Event::RecordTransaction { cost, snapshot } => {
                 Self::RecordTransaction { cost, snapshot: snapshot.into() }
-            }
+            },
         }
     }
 }

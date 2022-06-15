@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, future::Future, marker::PhantomData, sync::Arc,
 
 use ethereum_types::H256;
 use futures::{select, stream::FuturesUnordered, FutureExt, SinkExt, StreamExt};
-use jsonrpc_core::Result;
+use jsonrpsee::core::RpcResult;
 use tokio::{
     sync::{mpsc, oneshot, Semaphore},
     time::sleep,
@@ -21,13 +21,14 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
 use fc_rpc::{frontier_backend_client, internal_err, OverrideHandle};
 use fp_rpc::EthereumRuntimeRPCApi;
 
-use ap_client_evm_tracing::{
+use amax_eva_client_evm_tracing::{
     formatters::ResponseFormatter,
     types::block::{self, TransactionTrace},
 };
-use ap_primitives_rpc::debug::DebugRuntimeApi;
-pub use ap_rpc_core_trace::{FilterRequest, Trace as TraceT, TraceServer};
+pub use amax_eva_rpc_core_trace::{FilterRequest, TraceServer};
+use primitives_rpc::debug::DebugRuntimeApi;
 
+use crate::TxsTraceRes;
 /// An opaque batch ID.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CacheBatchId(u64);
@@ -46,7 +47,7 @@ enum CacheRequest {
     /// The task will answer only when it has processed this block.
     GetTraces {
         /// Returns the array of traces or an error.
-        sender: oneshot::Sender<Result<Vec<TransactionTrace>>>,
+        sender: oneshot::Sender<TxsTraceRes>,
         /// Hash of the block.
         block: H256,
     },
@@ -63,7 +64,7 @@ impl CacheRequester {
     /// Request to start caching the provided range of blocks.
     /// The task will add to blocks to its pool and immediately return the batch ID.
     #[instrument(skip(self))]
-    pub async fn start_batch(&self, blocks: Vec<H256>) -> Result<CacheBatchId> {
+    pub async fn start_batch(&self, blocks: Vec<H256>) -> RpcResult<CacheBatchId> {
         let (response_tx, response_rx) = oneshot::channel();
         let mut sender = self.0.clone();
 
@@ -87,7 +88,7 @@ impl CacheRequester {
     /// The block should be part of a batch first. If no batch has requested the block it will
     /// return an error.
     #[instrument(skip(self))]
-    pub async fn get_traces_by_block_hash(&self, block: H256) -> Result<Vec<TransactionTrace>> {
+    pub async fn get_traces_by_block_hash(&self, block: H256) -> RpcResult<Vec<TransactionTrace>> {
         let (response_tx, response_rx) = oneshot::channel();
         let mut sender = self.0.clone();
 
@@ -146,7 +147,7 @@ enum CacheBlockState {
         /// Multiple requests might query the same block while it is pooled to be
         /// traced. They response channel is stored here, and the result will be
         /// sent in all of them when the tracing is finished.
-        waiting_requests: Vec<oneshot::Sender<Result<Vec<TransactionTrace>>>>,
+        waiting_requests: Vec<oneshot::Sender<TxsTraceRes>>,
         /// Channel used to unqueue a tracing that has not yet started.
         /// A tracing will be unqueued if it has not yet been started and the last batch
         /// needing this block is ended (ignoring the expiration delay).
@@ -156,7 +157,7 @@ enum CacheBlockState {
     },
     /// Tracing has completed and the result is available. No Runtime API call
     /// will be needed until this block cache is removed.
-    Cached { traces: Result<Vec<TransactionTrace>> },
+    Cached { traces: TxsTraceRes },
 }
 
 /// Tracing a block is done in a separate tokio blocking task to avoid clogging the async threads.
@@ -168,7 +169,7 @@ enum BlockingTaskMessage {
     /// started being traced.
     Started { block_hash: H256 },
     /// The tracing is finished and the result is send to the main task.
-    Finished { block_hash: H256, result: Result<Vec<TransactionTrace>> },
+    Finished { block_hash: H256, result: TxsTraceRes },
 }
 
 /// Type wrapper for the cache task, generic over the Client, Block and Backend types.
@@ -193,8 +194,8 @@ where
     B: BlockT<Hash = H256> + Send + Sync + 'static,
     B::Header: HeaderT<Number = u32>,
     C::Api: BlockBuilder<B>,
-    C::Api: DebugRuntimeApi<B>,
     C::Api: EthereumRuntimeRPCApi<B>,
+    C::Api: DebugRuntimeApi<B>,
     C::Api: ApiExt<B>,
 {
     /// Create a new cache task.
@@ -343,10 +344,7 @@ where
                             })
                             .await
                             .map_err(|e| {
-                                internal_err(format!(
-                                    "Tracing Substrate block {} panicked : {:?}",
-                                    block, e
-                                ))
+                                format!("Tracing Substrate block {} panicked : {:?}", block, e)
                             })?
                         }
                         .await;
@@ -385,17 +383,13 @@ where
 
     /// Handle a request to get the traces of the provided block.
     /// - If the result is stored in the cache, it sends it immediatly.
-    /// - If the block is currently being pooled, it is added in this block cache waiting list,
-    ///   and all requests concerning this block will be satisfied when the tracing for this block
-    ///   is finished.
+    /// - If the block is currently being pooled, it is added in this block cache waiting list, and
+    ///   all requests concerning this block will be satisfied when the tracing for this block is
+    ///   finished.
     /// - If this block is missing from the cache, it means no batch asked for it. All requested
     ///   blocks should be contained in a batch beforehand, and thus an error is returned.
     #[instrument(skip(self))]
-    fn request_get_traces_by_block(
-        &mut self,
-        sender: oneshot::Sender<Result<Vec<TransactionTrace>>>,
-        block: H256,
-    ) {
+    fn request_get_traces_by_block(&mut self, sender: oneshot::Sender<TxsTraceRes>, block: H256) {
         if let Some(block_cache) = self.cached_blocks.get_mut(&block) {
             match &mut block_cache.state {
                 CacheBlockState::Pooled { ref mut waiting_requests, .. } => {
@@ -405,24 +399,22 @@ where
                         block
                     );
                     waiting_requests.push(sender);
-                }
+                },
                 CacheBlockState::Cached { ref traces, .. } => {
                     tracing::warn!(
                         "A request asked a cached block ({}), sending the traces directly.",
                         block
                     );
                     let _ = sender.send(traces.clone());
-                }
+                },
             }
         } else {
             tracing::warn!(
                 "An RPC request asked to get a block ({}) which was not batched.",
                 block
             );
-            let _ = sender.send(Err(internal_err(format!(
-                "RPC request asked a block ({}) that was not batched",
-                block
-            ))));
+            let _ = sender
+                .send(Err(format!("RPC request asked a block ({}) that was not batched", block)));
         }
     }
 
@@ -442,8 +434,8 @@ where
                 // We remove early the block cache if this batch is the last
                 // pooling this block.
                 if let Some(block_cache) = self.cached_blocks.get_mut(block) {
-                    if block_cache.active_batch_count == 1
-                        && matches!(
+                    if block_cache.active_batch_count == 1 &&
+                        matches!(
                             block_cache.state,
                             CacheBlockState::Pooled { started: false, .. }
                         )
@@ -475,7 +467,7 @@ where
 
     /// A tracing blocking task notifies it has finished the tracing and provide the result.
     #[instrument(skip(self, result))]
-    fn blocking_finished(&mut self, block_hash: H256, result: Result<Vec<TransactionTrace>>) {
+    fn blocking_finished(&mut self, block_hash: H256, result: TxsTraceRes) {
         // In some cases it might be possible to receive traces of a block
         // that has no entry in the cache because it was removed of the pool
         // and received a permit concurrently. We just ignore it.
@@ -532,7 +524,7 @@ where
         backend: Arc<BE>,
         substrate_hash: H256,
         overrides: Arc<OverrideHandle<B>>,
-    ) -> Result<Vec<TransactionTrace>> {
+    ) -> TxsTraceRes {
         let substrate_block_id = BlockId::Hash(substrate_hash);
 
         // Get Subtrate block data.
@@ -540,14 +532,9 @@ where
         let block_header = client
             .header(substrate_block_id)
             .map_err(|e| {
-                internal_err(format!(
-                    "Error when fetching substrate block {} header : {:?}",
-                    substrate_hash, e
-                ))
+                format!("Error when fetching substrate block {} header : {:?}", substrate_hash, e)
             })?
-            .ok_or_else(|| {
-                internal_err(format!("Subtrate block {} don't exist", substrate_block_id))
-            })?;
+            .ok_or_else(|| format!("Subtrate block {} don't exist", substrate_block_id))?;
 
         let height = *block_header.number();
         let substrate_parent_id = BlockId::<B>::Hash(*block_header.parent_hash());
@@ -565,15 +552,13 @@ where
             ) {
                 (Some(a), Some(b)) => (a, b),
                 _ => {
-                    return Err(internal_err(format!(
+                    return Err(format!(
                         "Failed to get Ethereum block data for Substrate block {}",
                         substrate_block_id
-                    )))
-                }
+                    ))
+                },
             },
-            _ => {
-                return Err(internal_err(format!("No storage override at {:?}", substrate_block_id)))
-            }
+            _ => return Err(format!("No storage override at {:?}", substrate_block_id)),
         };
 
         let eth_block_hash = eth_block.header.hash();
@@ -584,46 +569,33 @@ where
             .blockchain()
             .body(substrate_block_id)
             .map_err(|e| {
-                internal_err(format!(
-                    "Blockchain error when fetching extrinsics of block {} : {:?}",
-                    height, e
-                ))
+                format!("Blockchain error when fetching extrinsics of block {} : {:?}", height, e)
             })?
-            .ok_or_else(|| {
-                internal_err(format!("Could not find block {} when fetching extrinsics.", height))
-            })?;
+            .ok_or_else(|| format!("Could not find block {} when fetching extrinsics.", height))?;
 
         // Trace the block.
-        let f = || -> Result<_> {
+        let f = || -> Result<_, String> {
             api.initialize_block(&substrate_parent_id, &block_header)
-                .map_err(|e| internal_err(format!("Runtime api access error: {:?}", e)))?;
+                .map_err(|e| format!("Runtime api access error: {:?}", e))?;
 
             let _result = api
                 .trace_block(&substrate_parent_id, extrinsics, eth_tx_hashes)
-                .map_err(|e| {
-                    internal_err(format!(
-                        "Blockchain error when replaying block {} : {:?}",
-                        height, e
-                    ))
-                })?
+                .map_err(|e| format!("Blockchain error when replaying block {} : {:?}", height, e))?
                 .map_err(|e| {
                     tracing::warn!(
                         "Internal runtime error when replaying block {} : {:?}",
                         height,
                         e
                     );
-                    internal_err(format!(
-                        "Internal runtime error when replaying block {} : {:?}",
-                        height, e
-                    ))
+                    format!("Internal runtime error when replaying block {} : {:?}", height, e)
                 })?;
-            Ok(ap_primitives_rpc::debug::Response::Block)
+            Ok(primitives_rpc::debug::Response::Block)
         };
 
-        let mut proxy = ap_client_evm_tracing::listeners::CallList::default();
+        let mut proxy = amax_eva_client_evm_tracing::listeners::CallList::default();
         proxy.using(f)?;
         let mut traces: Vec<_> =
-            ap_client_evm_tracing::formatters::TraceFilter::format(proxy).unwrap();
+            amax_eva_client_evm_tracing::formatters::TraceFilter::format(proxy).unwrap();
         // Fill missing data.
         for trace in traces.iter_mut() {
             trace.block_hash = eth_block_hash;
@@ -636,10 +608,10 @@ where
                         height
                     );
 
-                    internal_err(format!(
+                    format!(
                         "Bug: A transaction has been replayed while it shouldn't (in block {}).",
                         height
-                    ))
+                    )
                 })?
                 .transaction_hash;
 

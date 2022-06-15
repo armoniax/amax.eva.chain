@@ -19,7 +19,7 @@ pub mod evm;
 pub mod gasometer;
 pub mod runtime;
 
-pub use self::{evm::EvmEvent, gasometer::GasometerEvent, runtime::RuntimeEvent};
+pub use crate::{evm::EvmEvent, gasometer::GasometerEvent, runtime::RuntimeEvent};
 
 use ::evm::Opcode;
 use alloc::vec::Vec;
@@ -256,7 +256,7 @@ pub fn opcodes_string(opcode: Opcode) -> Vec<u8> {
         Opcode(n) => {
             tmp = alloc::format!("Unknown({})", n);
             &tmp
-        }
+        },
     };
     out.as_bytes().to_vec()
 }

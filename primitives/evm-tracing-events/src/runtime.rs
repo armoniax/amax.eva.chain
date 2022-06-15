@@ -90,7 +90,7 @@ impl RuntimeEvent {
                     stack: if filter.enable_stack { Some(stack.into()) } else { None },
                     memory: if filter.enable_memory { Some(memory.into()) } else { None },
                 }
-            }
+            },
             evm_runtime::tracing::Event::StepResult { result, return_value } => Self::StepResult {
                 result: match result {
                     Ok(_) => Ok(()),
@@ -103,10 +103,10 @@ impl RuntimeEvent {
             },
             evm_runtime::tracing::Event::SLoad { address, index, value } => {
                 Self::SLoad { address, index, value }
-            }
+            },
             evm_runtime::tracing::Event::SStore { address, index, value } => {
                 Self::SStore { address, index, value }
-            }
+            },
         }
     }
 }

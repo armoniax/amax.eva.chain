@@ -27,6 +27,8 @@ use fp_storage::EthereumStorageSchema;
 // Local
 use amax_eva_runtime::{AccountId, Balance, Hash, Index, NodeBlock as Block, TransactionConverter};
 
+use crate::tracing::RpcRequesters as TracingRpcRequesters;
+
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi> {
     /// The client instance to use.
@@ -49,6 +51,10 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub backend: Arc<fc_db::Backend<Block>>,
     /// Maximum number of logs in a query.
     pub max_past_logs: u32,
+    /// tracing requesters
+    pub tracing_requesters: TracingRpcRequesters,
+    /// trace filter max count
+    pub trace_filter_max_count: u32,
     /// Fee history cache.
     pub fee_history_cache: FeeHistoryCache,
     /// Maximum fee history cache size.
@@ -125,6 +131,8 @@ where
         Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
         EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
     };
+    // Local
+    use amax_eva_rpc_trace::{Trace, TraceServer};
 
     let mut io = RpcModule::new(());
     let FullDeps {
@@ -138,6 +146,8 @@ where
         filter_pool,
         backend,
         max_past_logs,
+        tracing_requesters,
+        trace_filter_max_count,
         fee_history_cache,
         fee_history_cache_limit,
         overrides,
@@ -195,7 +205,19 @@ where
         .into_rpc(),
     )?;
     io.merge(Net::new(client.clone(), network, true).into_rpc())?;
-    io.merge(Web3::new(client).into_rpc())?;
+    io.merge(Web3::new(client.clone()).into_rpc())?;
+
+    if let Some((trace_requester, trace_filter_requester)) = tracing_requesters.trace {
+        io.merge(
+            Trace::new(
+                client.clone(),
+                trace_filter_requester,
+                trace_requester,
+                trace_filter_max_count,
+            )
+            .into_rpc(),
+        )?;
+    }
 
     #[cfg(feature = "manual-seal")]
     if let Some(command_sink) = command_sink {

@@ -5,14 +5,14 @@
 //! The implementation is composed of multiple tasks :
 //! - Many calls the the RPC handler `Trace::filter`, communicating with the main task.
 //! - A main `CacheTask` managing the cache and the communication between tasks.
-//! - For each traced block an async task responsible to wait for a permit, spawn a blocking
-//!   task and waiting for the result, then send it to the main `CacheTask`.
+//! - For each traced block an async task responsible to wait for a permit, spawn a blocking task
+//!   and waiting for the result, then send it to the main `CacheTask`.
 
 use std::{marker::PhantomData, sync::Arc};
 
 use ethereum_types::H256;
-use futures::{future::BoxFuture, FutureExt, SinkExt};
-use jsonrpc_core::Result;
+use futures::SinkExt;
+use jsonrpsee::core::RpcResult;
 use tokio::sync::oneshot;
 
 use sp_api::{BlockId, HeaderT};
@@ -21,18 +21,20 @@ use sp_runtime::traits::Block as BlockT;
 
 use fc_rpc::internal_err;
 
-use ap_client_evm_tracing::types::{
+use amax_eva_client_evm_tracing::types::{
     block::{self, TransactionTrace},
     replay::{TraceResults, TraceResultsWithTransactionHash},
 };
-pub use ap_rpc_core_trace::{FilterRequest, Trace as TraceT, TraceServer};
-use ap_rpc_core_types::{RequestBlockId, RequestBlockTag};
+pub use amax_eva_rpc_core_trace::{FilterRequest, TraceServer};
+use amax_eva_rpc_core_types::{RequestBlockId, RequestBlockTag};
 
 mod cache;
 pub use cache::{CacheRequester, CacheTask};
 
 mod trace;
 pub use trace::{Requester as TraceRequester, TraceTask};
+
+type TxsTraceRes = Result<Vec<TransactionTrace>, String>;
 
 /// RPC handler. Will communicate with a `CacheTask` through a `CacheRequester`.
 pub struct Trace<B, C> {
@@ -79,16 +81,16 @@ where
     }
 
     /// Convert an optional block ID (number or tag) to a block height.
-    fn block_id(&self, id: Option<RequestBlockId>) -> Result<u32> {
+    fn block_id(&self, id: Option<RequestBlockId>) -> RpcResult<u32> {
         match id {
             Some(RequestBlockId::Number(n)) => Ok(n),
             None | Some(RequestBlockId::Tag(RequestBlockTag::Latest)) => {
                 Ok(self.client.info().best_number)
-            }
+            },
             Some(RequestBlockId::Tag(RequestBlockTag::Earliest)) => Ok(0),
             Some(RequestBlockId::Tag(RequestBlockTag::Pending)) => {
                 Err(internal_err("'pending' is not supported"))
-            }
+            },
             Some(RequestBlockId::Hash(_)) => Err(internal_err("Block hash not supported")),
         }
     }
@@ -97,17 +99,14 @@ where
     async fn transaction_traces(
         self,
         transaction_hash: H256,
-    ) -> Result<Option<Vec<TransactionTrace>>> {
+    ) -> RpcResult<Option<Vec<TransactionTrace>>> {
         let mut trace_requester = self.trace_requester.clone();
         let (tx, rx) = oneshot::channel();
 
         // Send a message from the rpc handler to the service level task.
         trace_requester
             .send((trace::Request::Transaction(transaction_hash), tx))
-            .await
-            .map_err(|err| {
-                internal_err(format!("failed to send request to trace service : {:?}", err))
-            })?;
+            .await?;
 
         // Receive a message from the service level task and send the rpc response.
         rx.await
@@ -118,14 +117,15 @@ where
     }
 
     /// Returns all traces produced at given block.
-    async fn block_traces(self, number: RequestBlockId) -> Result<Option<Vec<TransactionTrace>>> {
+    async fn block_traces(
+        self,
+        number: RequestBlockId,
+    ) -> RpcResult<Option<Vec<TransactionTrace>>> {
         let mut trace_requester = self.trace_requester.clone();
         let (tx, rx) = oneshot::channel();
 
         // Send a message from the rpc handler to the service level task.
-        trace_requester.send((trace::Request::Block(number), tx)).await.map_err(|err| {
-            internal_err(format!("failed to send request to trace service : {:?}", err))
-        })?;
+        trace_requester.send((trace::Request::Block(number), tx)).await?;
 
         // Receive a message from the service level task and send the rpc response.
         rx.await
@@ -136,21 +136,22 @@ where
     }
 
     /// Executes the transaction with the given hash and returns a number of possible traces for it.
-    async fn replay_transaction(self, _hash: H256, _opts: Vec<String>) -> Result<TraceResults> {
+    async fn replay_transaction(self, _hash: H256, _opts: Vec<String>) -> RpcResult<TraceResults> {
         Err(internal_err("Current producer not support replay_transaction".to_string()))
     }
 
-    /// Executes all the transactions at the given block and returns a number of possible traces for each transaction.
+    /// Executes all the transactions at the given block and returns a number of possible traces for
+    /// each transaction.
     async fn replay_block_transactions(
         self,
         _hash: RequestBlockId,
         _opts: Vec<String>,
-    ) -> Result<Vec<TraceResultsWithTransactionHash>> {
+    ) -> RpcResult<Vec<TraceResultsWithTransactionHash>> {
         Err(internal_err("Current producer not support replay_block_transactions".to_string()))
     }
 
     /// `trace_filter` endpoint (wrapped in the trait implementation with futures compatibilty)
-    async fn filter(self, req: FilterRequest) -> Result<Vec<TransactionTrace>> {
+    async fn filter(self, req: FilterRequest) -> RpcResult<Vec<TransactionTrace>> {
         let from_block = self.block_id(req.from_block)?;
         let to_block = self.block_id(req.to_block)?;
         let block_heights = from_block..=to_block;
@@ -215,7 +216,7 @@ where
         req: FilterRequest,
         block_hashes: &[H256],
         count: usize,
-    ) -> Result<Vec<TransactionTrace>> {
+    ) -> RpcResult<Vec<TransactionTrace>> {
         let from_address = req.from_address.unwrap_or_default();
         let to_address = req.to_address.unwrap_or_default();
 
@@ -234,17 +235,17 @@ where
                 .iter()
                 .filter(|trace| match trace.action {
                     block::TransactionTraceAction::Call { from, to, .. } => {
-                        (from_address.is_empty() || from_address.contains(&from))
-                            && (to_address.is_empty() || to_address.contains(&to))
-                    }
+                        (from_address.is_empty() || from_address.contains(&from)) &&
+                            (to_address.is_empty() || to_address.contains(&to))
+                    },
                     block::TransactionTraceAction::Create { from, .. } => {
-                        (from_address.is_empty() || from_address.contains(&from))
-                            && to_address.is_empty()
-                    }
+                        (from_address.is_empty() || from_address.contains(&from)) &&
+                            to_address.is_empty()
+                    },
                     block::TransactionTraceAction::Suicide { address, .. } => {
-                        (from_address.is_empty() || from_address.contains(&address))
-                            && to_address.is_empty()
-                    }
+                        (from_address.is_empty() || from_address.contains(&address)) &&
+                            to_address.is_empty()
+                    },
                 })
                 .cloned()
                 .collect();
@@ -283,48 +284,43 @@ where
     }
 }
 
-impl<B, C> TraceT for Trace<B, C>
+#[jsonrpsee::core::async_trait]
+impl<B, C> TraceServer for Trace<B, C>
 where
     B: BlockT<Hash = H256> + Send + Sync + 'static,
     B::Header: HeaderT<Number = u32>,
     C: HeaderMetadata<B, Error = BlockChainError> + HeaderBackend<B>,
     C: Send + Sync + 'static,
 {
-    fn transaction_traces(
-        &self,
-        hash: H256,
-    ) -> BoxFuture<'static, jsonrpc_core::Result<Option<Vec<TransactionTrace>>>> {
-        self.clone().transaction_traces(hash).boxed()
-    }
-    fn filter(
-        &self,
-        filter: FilterRequest,
-    ) -> BoxFuture<'static, jsonrpc_core::Result<Vec<TransactionTrace>>> {
-        self.clone().filter(filter).boxed()
+    async fn transaction_traces(&self, hash: H256) -> RpcResult<Option<Vec<TransactionTrace>>> {
+        let server = self.clone();
+
+        server.transaction_traces(hash).await.map_err(|e| fc_rpc::internal_err(e))
     }
 
-    fn block_traces(
+    async fn filter(&self, filter: FilterRequest) -> RpcResult<Vec<TransactionTrace>> {
+        self.clone().filter(filter).await
+    }
+
+    async fn block_traces(
         &self,
         number: RequestBlockId,
-    ) -> BoxFuture<'static, jsonrpc_core::Result<Option<Vec<TransactionTrace>>>> {
-        self.clone().block_traces(number).boxed()
+    ) -> RpcResult<Option<Vec<TransactionTrace>>> {
+        self.clone().block_traces(number).await.map_err(|e| fc_rpc::internal_err(e))
     }
 
     /// Executes the transaction with the given hash and returns a number of possible traces for it.
-    fn replay_transaction(
-        &self,
-        hash: H256,
-        opts: Vec<String>,
-    ) -> BoxFuture<'static, Result<TraceResults>> {
-        self.clone().replay_transaction(hash, opts).boxed()
+    async fn replay_transaction(&self, hash: H256, opts: Vec<String>) -> RpcResult<TraceResults> {
+        self.clone().replay_transaction(hash, opts).await
     }
 
-    /// Executes all the transactions at the given block and returns a number of possible traces for each transaction.
-    fn replay_block_transactions(
+    /// Executes all the transactions at the given block and returns a number of possible traces for
+    /// each transaction.
+    async fn replay_block_transactions(
         &self,
         number: RequestBlockId,
         opts: Vec<String>,
-    ) -> BoxFuture<'static, Result<Vec<TraceResultsWithTransactionHash>>> {
-        self.clone().replay_block_transactions(number, opts).boxed()
+    ) -> RpcResult<Vec<TraceResultsWithTransactionHash>> {
+        self.clone().replay_block_transactions(number, opts).await
     }
 }

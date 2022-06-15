@@ -36,3 +36,6 @@ test-release: fmt
 
 test: fmt
 	cargo test --all
+
+release-tracing: fmt
+	cargo build --release --features evm-tracing

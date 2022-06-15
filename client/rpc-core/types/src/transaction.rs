@@ -198,19 +198,19 @@ pub fn recover_signer(transaction: &EthereumTransaction) -> Option<(H160, H512)>
             sig[32..64].copy_from_slice(&t.signature.s()[..]);
             sig[64] = t.signature.standard_v();
             msg.copy_from_slice(&ethereum::LegacyTransactionMessage::from(t.clone()).hash()[..]);
-        }
+        },
         EthereumTransaction::EIP2930(t) => {
             sig[0..32].copy_from_slice(&t.r[..]);
             sig[32..64].copy_from_slice(&t.s[..]);
             sig[64] = t.odd_y_parity as u8;
             msg.copy_from_slice(&ethereum::EIP2930TransactionMessage::from(t.clone()).hash()[..]);
-        }
+        },
         EthereumTransaction::EIP1559(t) => {
             sig[0..32].copy_from_slice(&t.r[..]);
             sig[32..64].copy_from_slice(&t.s[..]);
             sig[64] = t.odd_y_parity as u8;
             msg.copy_from_slice(&ethereum::EIP1559TransactionMessage::from(t.clone()).hash()[..]);
-        }
+        },
     }
 
     let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
@@ -241,6 +241,6 @@ pub fn create_address(source: &H160, transaction: &EthereumTransaction) -> Optio
             stream.append(source);
             stream.append(nonce);
             Some(H256::from_slice(Keccak256::digest(&stream.out()).as_slice()).into())
-        }
+        },
     }
 }

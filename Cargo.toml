@@ -15,6 +15,8 @@ members = [
     "primitives/core",
     "primitives/rpc",
     "primitives/evm-tracing-events",
+    "primitives/evm-ext",
+    "primitives/evm-tracer",
 ]
 resolver = "2"
 

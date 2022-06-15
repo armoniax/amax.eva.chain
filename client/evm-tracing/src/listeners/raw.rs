@@ -2,7 +2,7 @@ use ethereum_types::{H160, H256};
 use std::{collections::btree_map::BTreeMap, vec, vec::Vec};
 
 use crate::types::{convert_memory, single::RawStepLog, ContextType};
-use evm_tracing_events::{
+use primitives_evm_tracing_events::{
     runtime::{Capture, ExitReason},
     Event, GasometerEvent, Listener as ListenerT, RuntimeEvent, StepEventFilter,
 };
@@ -64,7 +64,7 @@ impl Listener {
     }
 
     pub fn using<R, F: FnOnce() -> R>(&mut self, f: F) -> R {
-        evm_tracing_events::using(self, f)
+        primitives_evm_tracing_events::using(self, f)
     }
 
     pub fn gasometer_event(&mut self, event: GasometerEvent) {
@@ -74,7 +74,7 @@ impl Listener {
                 // Next step will be the first context.
                 self.new_context = true;
                 self.final_gas = cost;
-            }
+            },
             GasometerEvent::RecordCost { cost, snapshot } => {
                 if let Some(context) = self.context_stack.last_mut() {
                     // Register opcode cost. (ignore costs not between Step and StepResult)
@@ -85,7 +85,7 @@ impl Listener {
 
                     self.final_gas = snapshot.used_gas;
                 }
-            }
+            },
             GasometerEvent::RecordDynamicCost { gas_cost, snapshot, .. } => {
                 if let Some(context) = self.context_stack.last_mut() {
                     // Register opcode cost. (ignore costs not between Step and StepResult)
@@ -96,7 +96,7 @@ impl Listener {
 
                     self.final_gas = snapshot.used_gas;
                 }
-            }
+            },
             // We ignore other kinds of message if any (new ones may be added in the future).
             #[allow(unreachable_patterns)]
             _ => (),
@@ -140,7 +140,7 @@ impl Listener {
                         },
                     });
                 }
-            }
+            },
             RuntimeEvent::StepResult { result, return_value } => {
                 // StepResult is expected to be emited after a step (in a context).
                 // Only case StepResult will occur without a Step before is in a transfer
@@ -191,7 +191,8 @@ impl Listener {
                                         .global_storage_changes
                                         .insert(context.address, context.storage_cache);
 
-                                    // Apply storage changes to parent, either updating its cache or map of changes.
+                                    // Apply storage changes to parent, either updating its cache or
+                                    // map of changes.
                                     for (address, mut storage) in
                                         context.global_storage_changes.into_iter()
                                     {
@@ -217,21 +218,21 @@ impl Listener {
                                 }
                             }
                         }
-                    }
+                    },
                     Err(Capture::Trap(opcode)) if ContextType::from(opcode.clone()).is_some() => {
                         self.new_context = true;
-                    }
+                    },
                     _ => (),
                 }
-            }
-            RuntimeEvent::SLoad { address: _, index, value }
-            | RuntimeEvent::SStore { address: _, index, value } => {
+            },
+            RuntimeEvent::SLoad { address: _, index, value } |
+            RuntimeEvent::SStore { address: _, index, value } => {
                 if let Some(context) = self.context_stack.last_mut() {
                     if !self.disable_storage {
                         context.storage_cache.insert(index, value);
                     }
                 }
-            }
+            },
             // We ignore other kinds of message if any (new ones may be added in the future).
             #[allow(unreachable_patterns)]
             _ => (),
@@ -244,7 +245,7 @@ impl ListenerT for Listener {
         match event {
             Event::Gasometer(e) => self.gasometer_event(e),
             Event::Runtime(e) => self.runtime_event(e),
-            _ => {}
+            _ => {},
         };
     }
 

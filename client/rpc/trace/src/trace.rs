@@ -2,7 +2,7 @@ use std::{future::Future, marker::PhantomData, sync::Arc};
 
 use ethereum_types::H256;
 use futures::StreamExt;
-use jsonrpc_core::Result as RpcResult;
+use jsonrpsee::core::RpcResult;
 use tokio::sync::{oneshot, Semaphore};
 
 use sc_client_api::backend::{Backend, StateBackend, StorageProvider};
@@ -17,12 +17,12 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, UniqueSaturatedInto};
 use fc_rpc::{frontier_backend_client, internal_err, OverrideHandle};
 use fp_rpc::EthereumRuntimeRPCApi;
 
-use ap_client_evm_tracing::{
+use amax_eva_client_evm_tracing::{
     formatters::{trace_filter::Formatter, ResponseFormatter},
     types::{self, TransactionTrace},
 };
-use ap_primitives_rpc::debug::DebugRuntimeApi;
-use ap_rpc_core_types::{RequestBlockId, RequestBlockTag};
+use amax_eva_rpc_core_types::{RequestBlockId, RequestBlockTag};
+use primitives_rpc::debug::DebugRuntimeApi;
 
 pub enum Request {
     Transaction(H256),
@@ -49,8 +49,8 @@ where
     B: BlockT<Hash = H256> + Send + Sync + 'static,
     B::Header: HeaderT<Number = u32>,
     C::Api: BlockBuilder<B>,
-    C::Api: DebugRuntimeApi<B>,
     C::Api: EthereumRuntimeRPCApi<B>,
+    C::Api: DebugRuntimeApi<B>,
     C::Api: ApiExt<B>,
 {
     /// Return the trace of the transaction.
@@ -69,7 +69,7 @@ where
             false,
         ) {
             Ok(Some((hash, index))) => (hash, index as usize),
-            Ok(None) => return Err(internal_err("Transaction hash not found".to_string())),
+            Ok(None) => return Err(internal_err("Transaction hash not found")),
             Err(e) => return Err(e),
         };
 
@@ -77,7 +77,7 @@ where
         let reference_id =
             match frontier_backend_client::load_hash::<B>(frontier_backend.as_ref(), hash) {
                 Ok(Some(hash)) => hash,
-                Ok(_) => return Err(internal_err("Block hash not found".to_string())),
+                Ok(_) => return Err(internal_err("Block hash not found")),
                 Err(e) => return Err(e),
             };
 
@@ -131,10 +131,10 @@ where
                         .map_err(|e| internal_err(format!("Runtime api access error : {:?}", e)))?
                         .map_err(|e| internal_err(format!("DispatchError: {:?}", e)))?;
 
-                    Ok(ap_primitives_rpc::debug::Response::Single)
+                    Ok(primitives_rpc::debug::Response::Single)
                 };
 
-                let mut proxy = ap_client_evm_tracing::listeners::CallList::default();
+                let mut proxy = amax_eva_client_evm_tracing::listeners::CallList::default();
                 proxy.using(f)?;
                 proxy.finish_transaction();
 
@@ -174,7 +174,7 @@ where
             }
         }
 
-        Err(internal_err("Runtime block call failed".to_string()))
+        Err(internal_err("Runtime block call failed"))
     }
 
     /// Return the trace of the transactions in a block.
@@ -189,20 +189,20 @@ where
             RequestBlockId::Number(n) => Ok(BlockId::Number(n.unique_saturated_into())),
             RequestBlockId::Tag(RequestBlockTag::Latest) => {
                 Ok(BlockId::Number(client.info().best_number))
-            }
+            },
             RequestBlockId::Tag(RequestBlockTag::Earliest) => {
                 Ok(BlockId::Number(0u32.unique_saturated_into()))
-            }
+            },
             RequestBlockId::Tag(RequestBlockTag::Pending) => {
                 Err(internal_err("'pending' blocks are not supported"))
-            }
+            },
             RequestBlockId::Hash(eth_hash) => {
                 match frontier_backend_client::load_hash::<B>(frontier_backend.as_ref(), eth_hash) {
                     Ok(Some(id)) => Ok(id),
-                    Ok(_) => Err(internal_err("Block hash not found".to_string())),
+                    Ok(_) => Err(internal_err("Block hash not found")),
                     Err(e) => Err(e),
                 }
-            }
+            },
         }?;
 
         // Get ApiRef. This handle allow to keep changes between txs in an internal buffer.
@@ -264,10 +264,10 @@ where
                         reference_id, e
                     ))
                 })?;
-            Ok(ap_primitives_rpc::debug::Response::Block)
+            Ok(primitives_rpc::debug::Response::Block)
         };
 
-        let mut proxy = ap_client_evm_tracing::listeners::CallList::default();
+        let mut proxy = amax_eva_client_evm_tracing::listeners::CallList::default();
         proxy.using(f)?;
         proxy.finish_transaction();
 
@@ -288,14 +288,14 @@ where
                     .get(trace.transaction_position as usize)
                     .ok_or_else(|| {
                         tracing::warn!(
-                        "Bug: A transaction has been replayed while it shouldn't (in block {}).",
-                        height
-                    );
+                            "Bug: A transaction has been replayed while it shouldn't (in block {}).",
+                            height
+                        );
 
                         internal_err(format!(
-                        "Bug: A transaction has been replayed while it shouldn't (in block {}).",
-                        height
-                    ))
+                            "Bug: A transaction has been replayed while it shouldn't (in block {}).",
+                            height
+                        ))
                     })?
                     .transaction_hash;
 
@@ -323,8 +323,8 @@ where
     B: BlockT<Hash = H256> + Send + Sync + 'static,
     B::Header: HeaderT<Number = u32>,
     C::Api: BlockBuilder<B>,
-    C::Api: DebugRuntimeApi<B>,
     C::Api: EthereumRuntimeRPCApi<B>,
+    C::Api: DebugRuntimeApi<B>,
     C::Api: ApiExt<B>,
 {
     /// Task spawned at service level that listens for messages on the rpc channel and spawns
@@ -374,7 +374,7 @@ where
                                 .await,
                             );
                         });
-                    }
+                    },
                     Some((Request::Block(request_block_id), response_tx)) => {
                         let client = client.clone();
                         let backend = backend.clone();
@@ -407,8 +407,8 @@ where
                                 .await,
                             );
                         });
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
         };
