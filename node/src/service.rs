@@ -36,12 +36,7 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 
     /// Otherwise we only use the default Substrate host functions.
     #[cfg(not(feature = "runtime-benchmarks"))]
-    #[cfg(feature = "evm-tracing")]
     type ExtendHostFunctions = primitives_evm_ext::evm_ext::HostFunctions;
-
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    #[cfg(not(feature = "evm-tracing"))]
-    type ExtendHostFunctions = ();
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         amax_eva_runtime::api::dispatch(method, data)

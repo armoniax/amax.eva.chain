@@ -9,9 +9,9 @@ description = "armonia multichain - eva child chain"
 [dependencies]
 # Parity
 codec = { package = "parity-scale-codec", version = "3.1", default-features = false, features = ["derive"] }
-evm = { version = "0.35.0", default-features = false, features = ["with-codec"] }
-evm-gasometer = { version = "0.35.0", default-features = false }
-evm-runtime = { version = "0.35.0", default-features = false }
+evm = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false, features = ["with-codec"] }
+evm-gasometer = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false }
+evm-runtime = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false }
 
 # Substrate
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }

@@ -79,7 +79,6 @@ pub struct RunCmd {
     /// Enable EVM tracing module on a non-authority node.
     #[clap(
         long,
-        conflicts_with = "validator",
         use_value_delimiter = true,
         require_value_delimiter = true,
         multiple_values = true

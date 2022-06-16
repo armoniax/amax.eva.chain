@@ -77,7 +77,7 @@ fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 # Local
 amax-eva-rpc-trace = { path = "../client/rpc/trace" }
 
-primitives-evm-ext = { path = "../primitives/evm-ext", optional = true }
+primitives-evm-ext = { path = "../primitives/evm-ext" }
 primitives-rpc = { path = "../primitives/rpc" }
 
 amax-eva-runtime = { path = "../runtime", default-features = false, features = ["std"] }
@@ -106,4 +106,6 @@ try-runtime = [
     "amax-eva-runtime/try-runtime",
 ]
 # Must be enabled for tracing runtimes only
-evm-tracing = ["primitives-evm-ext"]
+evm-tracing = [
+    "amax-eva-runtime/evm-tracing",
+]

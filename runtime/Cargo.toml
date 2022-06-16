@@ -119,6 +119,7 @@ std = [
     "amax-eva-runtime-constants/std",
     "primitives-core/std",
     "primitives-rpc/std",
+    "primitives-evm-tracer/std",
 ]
 runtime-benchmarks = [
     "hex-literal",
