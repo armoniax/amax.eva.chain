@@ -13,7 +13,7 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
 // Frontier
 use fc_rpc::OverrideHandle;
 // Local
-use amax_eva_rpc_trace::{
+use amax_eva_rpc::{
     CacheRequester as TraceFilterCacheRequester, CacheTask, TraceRequester, TraceTask,
 };
 

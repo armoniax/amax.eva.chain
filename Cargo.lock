@@ -104,7 +104,7 @@ dependencies = [
 name = "amax-eva"
 version = "0.1.0"
 dependencies = [
- "amax-eva-rpc-trace",
+ "amax-eva-rpc",
  "amax-eva-runtime",
  "async-trait",
  "clap",
@@ -163,7 +163,6 @@ dependencies = [
 name = "amax-eva-client-evm-tracing"
 version = "0.1.0"
 dependencies = [
- "amax-eva-rpc-core-types",
  "ethereum-types",
  "hex",
  "log",
@@ -174,40 +173,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "amax-eva-rpc-core-trace"
+name = "amax-eva-rpc"
 version = "0.1.0"
 dependencies = [
  "amax-eva-client-evm-tracing",
- "amax-eva-rpc-core-types",
- "ethereum-types",
- "futures 0.3.21",
- "jsonrpsee",
- "serde",
-]
-
-[[package]]
-name = "amax-eva-rpc-core-types"
-version = "0.1.0"
-dependencies = [
- "ethereum",
- "ethereum-types",
- "evm",
- "hex",
- "parity-scale-codec",
- "rlp",
- "serde",
- "serde_json",
- "sha3 0.10.1",
- "sp-io",
-]
-
-[[package]]
-name = "amax-eva-rpc-trace"
-version = "0.1.0"
-dependencies = [
- "amax-eva-client-evm-tracing",
- "amax-eva-rpc-core-trace",
- "amax-eva-rpc-core-types",
+ "amax-eva-rpc-core",
  "ethereum",
  "ethereum-types",
  "fc-db",
@@ -225,6 +195,17 @@ dependencies = [
  "sp-runtime",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "amax-eva-rpc-core"
+version = "0.1.0"
+dependencies = [
+ "amax-eva-client-evm-tracing",
+ "ethereum-types",
+ "futures 0.3.21",
+ "jsonrpsee",
+ "serde",
 ]
 
 [[package]]

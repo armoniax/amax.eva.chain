@@ -25,7 +25,7 @@ use amax_eva_client_evm_tracing::{
     formatters::ResponseFormatter,
     types::block::{self, TransactionTrace},
 };
-pub use amax_eva_rpc_core_trace::{FilterRequest, TraceServer};
+pub use amax_eva_rpc_core::{FilterRequest, TraceServer};
 use primitives_rpc::debug::DebugRuntimeApi;
 
 use crate::TxsTraceRes;

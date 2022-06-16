@@ -1,5 +1,5 @@
 [package]
-name = "amax-eva-rpc-core-trace"
+name = "amax-eva-rpc-core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
@@ -15,5 +15,4 @@ serde = { version = "1.0", features = ["derive"] }
 ethereum-types = "0.13.1"
 
 # Local
-amax-eva-client-evm-tracing = { path = "../../evm-tracing" }
-amax-eva-rpc-core-types = { path = "../types" }
+amax-eva-client-evm-tracing = { path = "../evm-tracing" }

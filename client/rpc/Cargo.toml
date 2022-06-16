@@ -1,5 +1,5 @@
 [package]
-name = "amax-eva-rpc-trace"
+name = "amax-eva-rpc"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
@@ -31,7 +31,6 @@ fc-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-
 fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22" }
 
 # Local
-amax-eva-client-evm-tracing = { path = "../../evm-tracing" }
-primitives-rpc = { path = "../../../primitives/rpc" }
-amax-eva-rpc-core-trace = { path = "../../rpc-core/trace" }
-amax-eva-rpc-core-types = { path = "../../rpc-core/types" }
+amax-eva-client-evm-tracing = { path = "../evm-tracing" }
+primitives-rpc = { path = "../../primitives/rpc" }
+amax-eva-rpc-core = { path = "../rpc-core" }

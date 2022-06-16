@@ -132,7 +132,7 @@ where
         EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
     };
     // Local
-    use amax_eva_rpc_trace::{Trace, TraceServer};
+    use amax_eva_rpc::{Trace, TraceServer};
 
     let mut io = RpcModule::new(());
     let FullDeps {

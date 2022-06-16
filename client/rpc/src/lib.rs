@@ -25,8 +25,7 @@ use amax_eva_client_evm_tracing::types::{
     block::{self, TransactionTrace},
     replay::{TraceResults, TraceResultsWithTransactionHash},
 };
-pub use amax_eva_rpc_core_trace::{FilterRequest, TraceServer};
-use amax_eva_rpc_core_types::{RequestBlockId, RequestBlockTag};
+pub use amax_eva_rpc_core::{FilterRequest, RequestBlockId, RequestBlockTag, TraceServer};
 
 mod cache;
 pub use cache::{CacheRequester, CacheTask};

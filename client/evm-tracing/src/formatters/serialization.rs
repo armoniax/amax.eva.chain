@@ -1,5 +1,3 @@
-//! Provide serialization functions for various types and formats.
-
 use ethereum_types::{H256, U256};
 use serde::{
     ser::{Error, SerializeSeq},
@@ -10,12 +8,16 @@ pub fn seq_h256_serialize<S>(data: &Option<Vec<H256>>, serializer: S) -> Result<
 where
     S: Serializer,
 {
-    let d = data.clone().unwrap();
-    let mut seq = serializer.serialize_seq(Some(d.len()))?;
-    for h in d {
-        seq.serialize_element(&format!("{:x}", h))?;
+    if let Some(vec) = data {
+        let mut seq = serializer.serialize_seq(Some(vec.len()))?;
+        for hash in vec {
+            seq.serialize_element(&format!("{:x}", hash))?;
+        }
+        seq.end()
+    } else {
+        let seq = serializer.serialize_seq(Some(0))?;
+        seq.end()
     }
-    seq.end()
 }
 
 pub fn opcode_serialize<S>(opcode: &[u8], serializer: S) -> Result<S::Ok, S::Error>

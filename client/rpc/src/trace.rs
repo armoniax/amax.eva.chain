@@ -21,7 +21,7 @@ use amax_eva_client_evm_tracing::{
     formatters::{trace_filter::Formatter, ResponseFormatter},
     types::{self, TransactionTrace},
 };
-use amax_eva_rpc_core_types::{RequestBlockId, RequestBlockTag};
+use amax_eva_rpc_core::{RequestBlockId, RequestBlockTag};
 use primitives_rpc::debug::DebugRuntimeApi;
 
 pub enum Request {

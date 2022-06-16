@@ -1,4 +1,5 @@
-use super::blockscout::BlockscoutCallInner;
+use super::{blockscout::BlockscoutCallInner, serialization::*, Bytes};
+
 use crate::types::{
     single::{Call, TransactionTrace},
     CallResult, CallType, CreateResult,
@@ -6,7 +7,6 @@ use crate::types::{
 
 use crate::listeners::call_list::Listener;
 
-use crate::types::{serialization::*, Bytes};
 use serde::Serialize;
 
 use codec::{Decode, Encode};

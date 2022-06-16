@@ -7,7 +7,7 @@ pub mod block;
 pub mod replay;
 pub mod single;
 
-pub(crate) use amax_eva_rpc_core_types::{serialization, Bytes};
+pub(crate) use crate::formatters::{serialization, Bytes};
 use serde::Serialize;
 use serialization::*;
 

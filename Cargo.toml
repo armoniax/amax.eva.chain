@@ -2,8 +2,8 @@
 members = [
     # Client
     "client/evm-tracing",
-    "client/rpc-core/trace",
-    "client/rpc-core/types",
+    "client/rpc",
+    "client/rpc-core",
 
     # Node
     "node",

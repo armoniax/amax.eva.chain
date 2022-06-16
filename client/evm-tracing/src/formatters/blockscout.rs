@@ -1,8 +1,10 @@
+use super::Bytes;
+
 use crate::{
     listeners::call_list::Listener,
     types::{
         single::{Call, TransactionTrace},
-        Bytes, CallResult, CallType, CreateResult,
+        CallResult, CallType, CreateResult,
     },
 };
 use codec::{Decode, Encode};

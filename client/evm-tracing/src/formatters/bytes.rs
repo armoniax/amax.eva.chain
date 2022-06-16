@@ -9,7 +9,7 @@ use serde::{
 };
 
 /// Wrapper structure around vector of bytes.
-#[derive(Debug, PartialEq, Eq, Default, Decode, Encode, Hash, Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Hash, Encode, Decode)]
 pub struct Bytes(pub Vec<u8>);
 
 impl Bytes {
