@@ -18,8 +18,6 @@ impl super::ResponseFormatter for Formatter {
     type Response = Vec<TransactionTrace>;
 
     fn format(mut listener: Listener) -> Option<Vec<TransactionTrace>> {
-        log::warn!("listener: {:?}", listener);
-
         // Remove empty BTreeMaps pushed to `entries`.
         // I.e. InvalidNonce or other pallet_evm::runner exits
         listener.entries.retain(|x| !x.is_empty());
