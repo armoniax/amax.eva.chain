@@ -35,9 +35,7 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 
 		// TODO: remove it
 		// set the contract address
-		let receipt0 = await context.web3.eth.getTransactionReceipt(
-			tx.transactionHash
-		);
+		let receipt0 = await context.web3.eth.getTransactionReceipt(tx.transactionHash);
 		console.log("expected FORST_CONTRACE_ADDRESS: " + receipt0.contractAddress);
 		console.log("got FORST_CONTRACE_ADDRESS: " + FIRST_CONTRACT_ADDRESS);
 	});
