@@ -1,0 +1,9 @@
+export const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
+export const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
+
+export const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
+
+export const CHAIN_ID = 160;
+export const BLOCK_TIMESTAMP = 2; // 2 seconds per block
+export const BLOCK_HASH_COUNT = 2400;
+export const BLOCK_GAS_LIMIT = 75000000;

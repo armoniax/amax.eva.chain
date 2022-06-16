@@ -1,18 +1,16 @@
 import { expect, use as chaiUse } from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import Test from "../build/contracts/Test.json"
+import Test from "../build/contracts/Test.json";
+import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, FIRST_CONTRACT_ADDRESS } from "./config";
 import { createAndFinalizeBlock, customRequest, describeWithFrontier } from "./util";
 
 chaiUse(chaiAsPromised);
 
 describeWithFrontier("Frontier RPC (Contract)", (context) => {
-	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
-	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
-
 	const TEST_CONTRACT_BYTECODE = Test.bytecode;
-	const TEST_CONTRACT_DEPLOYED_BYTECODE = Test.deployedBytecode
-	let FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
+	const TEST_CONTRACT_DEPLOYED_BYTECODE = Test.deployedBytecode;
+
 	// Those test are ordered. In general this should be avoided, but due to the time it takes
 	// to spin up a frontier node, it saves a lot of time.
 
@@ -41,22 +39,15 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 			result: "0x",
 		});
 
-		// Verify the contract is in the pending state, TODO: current not support pending api
-		// expect(await customRequest(context.web3, "eth_getCode", [FIRST_CONTRACT_ADDRESS, "pending"])).to.deep.equal({
-		//	id: 1,
-		//	jsonrpc: "2.0",
-		//	result: TEST_CONTRACT_DEPLOYED_BYTECODE,
-		//});
+		// Verify the contract is in the pending state
+		expect(await customRequest(context.web3, "eth_getCode", [FIRST_CONTRACT_ADDRESS, "pending"])).to.deep.equal({
+			id: 1,
+			jsonrpc: "2.0",
+			result: TEST_CONTRACT_DEPLOYED_BYTECODE,
+		});
 
 		// Verify the contract is stored after the block is produced
 		await createAndFinalizeBlock(context.web3);
-
-		// set the contract address
-		let receipt0 = await context.web3.eth.getTransactionReceipt(
-			tx.transactionHash
-		);
-		FIRST_CONTRACT_ADDRESS = receipt0.contractAddress;
-
 		expect(await customRequest(context.web3, "eth_getCode", [FIRST_CONTRACT_ADDRESS])).to.deep.equal({
 			id: 1,
 			jsonrpc: "2.0",
@@ -65,15 +56,22 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 	});
 
 	it("eth_call contract create should return code", async function () {
-		expect(await context.web3.eth.call({
-			data: TEST_CONTRACT_BYTECODE
-		})).to.be.eq(TEST_CONTRACT_DEPLOYED_BYTECODE);
+		expect(
+			await context.web3.eth.call({
+				data: TEST_CONTRACT_BYTECODE,
+			})
+		).to.be.eq(TEST_CONTRACT_DEPLOYED_BYTECODE);
 	});
 
 	it("eth_call at missing block returns error", async function () {
 		const nonExistingBlockNumber = "999999";
-		return expect(context.web3.eth.call({
-			data: TEST_CONTRACT_BYTECODE,
-		}, nonExistingBlockNumber)).to.eventually.rejectedWith('header not found');
+		return expect(
+			context.web3.eth.call(
+				{
+					data: TEST_CONTRACT_BYTECODE,
+				},
+				nonExistingBlockNumber
+			)
+		).to.eventually.rejectedWith("header not found");
 	});
 });

@@ -1,9 +1,9 @@
 import { expect } from "chai";
-
-import Test from "../build/contracts/Test.json"
-import { describeWithFrontier, createAndFinalizeBlock,customRequest } from "./util";
 import { AbiItem } from "web3-utils";
 
+import Test from "../build/contracts/Test.json";
+import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, FIRST_CONTRACT_ADDRESS } from "./config";
+import { describeWithFrontier, createAndFinalizeBlock, customRequest } from "./util";
 
 // (!) The implementation must match the one in the rpc handler.
 // If the variation in the estimate is less than 10%,
@@ -14,10 +14,10 @@ function binary_search(one_off_estimation) {
 	let lowest = 21000;
 	let mid = Math.min(one_off_estimation * 3, (highest + lowest) / 2);
 	let previous_highest = highest;
-	while(true) {
-		if(mid >= one_off_estimation) {
+	while (true) {
+		if (mid >= one_off_estimation) {
 			highest = mid;
-			if((previous_highest - highest) * ESTIMATION_VARIANCE / previous_highest < 1){
+			if (((previous_highest - highest) * ESTIMATION_VARIANCE) / previous_highest < 1) {
 				break;
 			}
 			previous_highest = highest;
@@ -30,16 +30,14 @@ function binary_search(one_off_estimation) {
 }
 
 function estimation_variance(binary_search_estimation, one_off_estimation) {
-	return (binary_search_estimation - one_off_estimation) * ESTIMATION_VARIANCE / binary_search_estimation;
+	return ((binary_search_estimation - one_off_estimation) * ESTIMATION_VARIANCE) / binary_search_estimation;
 }
 
 describeWithFrontier("Frontier RPC (Gas)", (context) => {
-	const GENESIS_ACCOUNT = "0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac";
-	const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
-
-	const TEST_CONTRACT_BYTECODE = Test.bytecode;
 	const TEST_CONTRACT_ABI = Test.abi as AbiItem[];
-	const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a"; // Those test are ordered. In general this should be avoided, but due to the time it takes	// to spin up a frontier node, it saves a lot of time.
+
+	// Those test are ordered. In general this should be avoided, but due to the time it takes
+	// to spin up a frontier node, it saves a lot of time.
 
 	// EXTRINSIC_GAS_LIMIT = [BLOCK_GAS_LIMIT - BLOCK_GAS_LIMIT * (NORMAL_DISPATCH_RATIO - AVERAGE_ON_INITIALIZE_RATIO) - EXTRINSIC_BASE_Weight] / WEIGHT_PER_GAS = (1_000_000_000_000 * 2 * (0.75-0.1) - 125_000_000) / 20000
 	const EXTRINSIC_GAS_LIMIT = 64995685;
@@ -49,9 +47,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		let one_off_estimation = 196657;
 		let binary_search_estimation = binary_search(one_off_estimation);
 		// Sanity check expect a variance of 10%.
-		expect(
-			estimation_variance(binary_search_estimation, one_off_estimation)
-		).to.be.lessThan(1);
+		expect(estimation_variance(binary_search_estimation, one_off_estimation)).to.be.lessThan(1);
 		expect(
 			await context.web3.eth.estimateGas({
 				from: GENESIS_ACCOUNT,
@@ -60,7 +56,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		).to.equal(binary_search_estimation);
 	});
 
-	it("block gas limit over 5M", async function () {
+	it.skip("block gas limit over 5M", async function () {
 		expect((await context.web3.eth.getBlock("latest")).gasLimit).to.be.above(5000000);
 	});
 
@@ -77,7 +73,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	});
 
 	// Testing the gas limit protection, hardcoded to 25M
-	it("gas limit should increase on next block if gas fully used", async function () {
+	it.skip("gas limit should increase on next block if gas fully used", async function () {
 		// TODO: fill a block with many heavy transaction to simulate lot of gas.
 	});
 
@@ -86,9 +82,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		let one_off_estimation = 21204;
 		let binary_search_estimation = binary_search(one_off_estimation);
 		// Sanity check expect a variance of 10%.
-		expect(
-			estimation_variance(binary_search_estimation, one_off_estimation)
-		).to.be.lessThan(1);
+		expect(estimation_variance(binary_search_estimation, one_off_estimation)).to.be.lessThan(1);
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
@@ -102,11 +96,9 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		let one_off_estimation = 21204;
 		let binary_search_estimation = binary_search(one_off_estimation);
 		// Sanity check expect a variance of 10%.
-		expect(
-			estimation_variance(binary_search_estimation, one_off_estimation)
-		).to.be.lessThan(1);
+		expect(estimation_variance(binary_search_estimation, one_off_estimation)).to.be.lessThan(1);
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
-			from: GENESIS_ACCOUNT
+			from: GENESIS_ACCOUNT,
 		});
 
 		expect(await contract.methods.multiply(3).estimateGas()).to.equal(binary_search_estimation);
@@ -118,34 +110,38 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		let one_off_estimation = 196657 + 4300;
 		let binary_search_estimation = binary_search(one_off_estimation);
 		// Sanity check expect a variance of 10%.
-		expect(
-			estimation_variance(binary_search_estimation, one_off_estimation)
-		).to.be.lessThan(1);
-		let result = (await customRequest(context.web3, "eth_estimateGas", [{
-			from: GENESIS_ACCOUNT,
-			data: Test.bytecode,
-			accessList: [{
-				address: "0x0000000000000000000000000000000000000000",
-				storageKeys: ["0x0000000000000000000000000000000000000000000000000000000000000000"]
-			}]
-		}])).result;
+		expect(estimation_variance(binary_search_estimation, one_off_estimation)).to.be.lessThan(1);
+		let result = (
+			await customRequest(context.web3, "eth_estimateGas", [
+				{
+					from: GENESIS_ACCOUNT,
+					data: Test.bytecode,
+					accessList: [
+						{
+							address: "0x0000000000000000000000000000000000000000",
+							storageKeys: ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+						},
+					],
+				},
+			])
+		).result;
 		expect(result).to.equal(context.web3.utils.numberToHex(binary_search_estimation));
 	});
 
 	it("eth_estimateGas 0x0 gasPrice is equivalent to not setting one", async function () {
-		let result = (await context.web3.eth.estimateGas({
+		let result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
 			gasPrice: "0x0",
-		}));
+		});
 		expect(result).to.equal(197690);
-		result = (await context.web3.eth.estimateGas({
+		result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
-		}));
+		});
 		expect(result).to.equal(197690);
 	});
-	
+
 	it("tx gas limit below EXTRINSIC_GAS_LIMIT", async function () {
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
@@ -160,9 +156,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		expect((createReceipt as any).transactionHash).to.be.not.null;
 		expect((createReceipt as any).blockHash).to.be.not.null;
-
 	});
-
 	it("tx gas limit equal EXTRINSIC_GAS_LIMIT", async function () {
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
@@ -178,7 +172,6 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 		expect((createReceipt as any).transactionHash).to.be.not.null;
 		expect((createReceipt as any).blockHash).to.be.not.null;
 	});
-
 	it("tx gas limit larger EXTRINSIC_GAS_LIMIT", async function () {
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
