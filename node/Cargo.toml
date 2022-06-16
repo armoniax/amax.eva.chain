@@ -85,7 +85,7 @@ fp-storage = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 
 # Local
 primitives-core = { path = "../primitives/core" }
-runtime-common = { path = "../runtime/common" }
+runtime-common = { path = "../runtime/common", default-features = false, features = ["std"] }
 
 eva-runtime = { path = "../runtime/eva", default-features = false, features = ["std"] }
 eva-runtime-constants = { path = "../runtime/eva/constants" }
@@ -99,11 +99,13 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 default = ["aura"]
 aura = [
     "sc-consensus-aura",
+    "runtime-common/aura",
     "eva-runtime/aura",
     "wall-e-runtime/aura",
 ]
 manual-seal = [
     "sc-consensus-manual-seal",
+    "runtime-common/manual-seal",
     "eva-runtime/manual-seal",
     "wall-e-runtime/manual-seal",
 ]
