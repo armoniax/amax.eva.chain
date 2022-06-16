@@ -1,12 +1,17 @@
-export const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
-export const GENESIS_ACCOUNT_PRIVATE_KEY = "0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342";
-export const GENESIS_ACCOUNT_BALANCE = "340282366920938463463374607431768210955";
+export const GENESIS_ACCOUNT = "0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac";
+export const GENESIS_ACCOUNT_PRIVATE_KEY = "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133";
+export const GENESIS_ACCOUNT_BALANCE = "100000000000000000000000";
 
-export const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
+export const FIRST_CONTRACT_ADDRESS = "0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3";
 
 export const NODE_BINARY_NAME = "amax-eva";
-export const CHAIN_ID = 42;
+
+export const RUNTIME_SPEC_NAME = "armonia-wall-e";
+export const RUNTIME_SPEC_VERSION = 1;
+export const RUNTIME_IMPL_VERSION = 1;
+
+export const CHAIN_ID = 161; // wall-e chain id
 export const BLOCK_TIMESTAMP = 2; // 2 seconds per block
-export const BLOCK_HASH_COUNT = 256;
+export const BLOCK_HASH_COUNT = 2400;
 export const EXISTENIAL_DEPOSIT = 0; // The minimum amount required to keep an account open
-export const BLOCK_GAS_LIMIT = 75000000;
+export const BLOCK_GAS_LIMIT = 60000000; // 0.75 * 20000_0000_0000 / 25000
