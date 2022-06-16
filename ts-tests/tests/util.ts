@@ -70,12 +70,15 @@ export async function startFrontierNode(provider?: string): Promise<{ web3: Web3
 		`--no-telemetry`,
 		`--no-prometheus`,
 		`--sealing=Manual`,
+        `--unsafe-ws-external`,
+        `--unsafe-rpc-external`,
 		`--no-grandpa`,
 		`--force-authoring`,
 		`-l${FRONTIER_LOG}`,
 		`--port=${PORT}`,
 		`--rpc-port=${RPC_PORT}`,
 		`--ws-port=${WS_PORT}`,
+		`--ethapi`, `trace`,
 		`--tmp`,
 	];
 	const binary = spawn(cmd, args);
@@ -144,7 +147,8 @@ export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }
 		// Making sure the Frontier node has started
 		before("Starting Frontier Test Node", async function () {
 			this.timeout(SPAWNING_TIME);
-			const init = await startFrontierNode(provider);
+			let init = await startFrontierNode(provider);
+			init.web3 = extendTrace(init.web3)
 			context.web3 = init.web3;
 			context.ethersjs = init.ethersjs;
 			binary = init.binary;
@@ -158,3 +162,50 @@ export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }
 		cb(context);
 	});
 }
+
+// extends web3 for usage with parity's `trace` module
+export function extendTrace(web3: Web3) {
+	return web3.extend({
+	  property:'trace',
+	  methods:[{
+		name:'call',
+		call:'trace_call',
+		params:2
+	  }, {
+		name:'callMany',
+		call:'trace_callMany',
+		params:2
+	  }, {
+		name:'rawTransaction',
+		call:'trace_rawTransaction',
+		params:2
+	  }, {
+		name:'replayBlockTransactions',
+		call:'trace_replayBlockTransactions',
+		params:2,
+		// inputFormatter: [web3.extend.formatters.inputBlockNumberFormatter,null]
+	  }, {
+		name:'replayTransaction',
+		call:'trace_replayTransaction',
+		params:2
+	  }, {
+		name:'block',
+		call:'trace_block',
+		params:1,
+		// inputFormatter: [web3.extend.formatters.inputBlockNumberFormatter]
+	  }, {
+		name:'filter',
+		call:'trace_filter',
+		params:1
+	  }, {
+		name:'get',
+		call:'trace_get',
+		params:2
+	  }, {
+		name:'transaction',
+		call:'trace_transaction',
+		params:1
+	  }]
+	})
+  } // note: some methods must be manually hexified, due to the fact that it takes arrays with hexified values inside
+  
