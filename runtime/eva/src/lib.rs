@@ -28,7 +28,9 @@ use frame_support::{
     weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
-use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
+use pallet_evm::{
+    EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner,
+};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
 // re-exports
@@ -49,7 +51,7 @@ use runtime_common::{
     evm_config,
     pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
     precompiles::FrontierPrecompiles,
-    CoinbaseAuthor,
+    CoinbaseAuthor, ToAuthor,
 };
 
 // To learn more about runtime versioning and what each of the following value means:
@@ -215,7 +217,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime, Balances>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = fee::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -277,6 +279,17 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const UncleGenerations: BlockNumber = 0;
+}
+
+impl pallet_authorship::Config for Runtime {
+    type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
+    type UncleGenerations = UncleGenerations;
+    type FilterUncle = ();
+    type EventHandler = ();
 }
 
 impl pallet_authorities::Config for Runtime {
@@ -363,7 +376,7 @@ impl pallet_evm::Config for Runtime {
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
-    type OnChargeTransaction = ();
+    type OnChargeTransaction = EVMCurrencyAdapter<Balances, ToAuthor<Runtime, Balances>>;
     type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
 }
 
@@ -405,8 +418,8 @@ construct_runtime!(
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
         Session: pallet_session = 22,
-
-        Authorities: pallet_authorities = 23,
+        Authorship: pallet_authorship = 23,
+        Authorities: pallet_authorities = 24,
 
         // Governance.
         Privilege: pallet_privilege = 30,
