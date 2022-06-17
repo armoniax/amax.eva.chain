@@ -46,10 +46,10 @@ use primitives_core::{
     Signature,
 };
 use runtime_common::{
-    ethereum::CoinbaseAuthor,
     evm_config,
     pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
     precompiles::FrontierPrecompiles,
+    CoinbaseAuthor,
 };
 
 // To learn more about runtime versioning and what each of the following value means:
@@ -405,6 +405,7 @@ construct_runtime!(
         Aura: pallet_aura = 20,
         Grandpa: pallet_grandpa = 21,
         Session: pallet_session = 22,
+
         Authorities: pallet_authorities = 23,
 
         // Governance.
