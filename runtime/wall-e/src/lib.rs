@@ -45,7 +45,9 @@ use primitives_core::{
     Signature,
 };
 use runtime_common::{
-    ethereum::CoinbaseAuthor, evm_config, pallets::authorities as pallet_authorities,
+    ethereum::CoinbaseAuthor,
+    evm_config,
+    pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
     precompiles::FrontierPrecompiles,
 };
 use wall_e_runtime_constants::{currency, evm, fee, system, time};
@@ -287,6 +289,12 @@ impl pallet_authorities::Config for Runtime {
 // Governance.
 // ################################################################################################
 
+impl pallet_privilege::Config for Runtime {
+    type Event = Event;
+    type PrivilegeOrigin = EnsureRootOrTwoThirdsTechnicalCommittee;
+    type Call = Call;
+}
+
 parameter_types! {
     /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
     /// Motions may end in fewer blocks if enough votes are cast to determine the result.
@@ -401,8 +409,9 @@ construct_runtime!(
         Authorities: pallet_authorities = 23,
 
         // Governance.
-        TechnicalCommittee: pallet_collective::<Instance1> = 30,
-        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 31,
+        Privilege: pallet_privilege = 30,
+        TechnicalCommittee: pallet_collective::<Instance1> = 31,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 32,
 
         // Evm compatibility.
         EVM: pallet_evm = 100,

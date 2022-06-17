@@ -42,6 +42,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 accounts[0],
                 // Pre-funded accounts
                 endowed,
+                vec![accounts[0], accounts[1], accounts[2]],
             )
         },
         // Bootnodes
@@ -86,6 +87,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 accounts[0], // Alith
                 // Pre-funded accounts
                 endowed,
+                vec![accounts[0], accounts[1], accounts[2]],
             )
         },
         // Bootnodes
@@ -113,9 +115,11 @@ fn genesis(
     initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
     root_key: AccountId,
     endowed: Vec<(AccountId, Balance)>,
+    technical_committee: Vec<AccountId>,
 ) -> GenesisConfig {
     use wall_e_runtime::{
         AuthoritiesConfig, BalancesConfig, SessionConfig, SudoConfig, SystemConfig,
+        TechnicalCommitteeConfig,
     };
     GenesisConfig {
         // System && Utility.
@@ -138,7 +142,10 @@ fn genesis(
         authorities: AuthoritiesConfig {
             keys: initial_authorities.iter().map(|x| (x.0)).collect::<Vec<_>>(),
         },
-        technical_committee: Default::default(),
+        technical_committee: TechnicalCommitteeConfig {
+            members: technical_committee,
+            phantom: Default::default(),
+        },
         technical_committee_membership: Default::default(),
         // Evm compatibility.
         evm: Default::default(),
