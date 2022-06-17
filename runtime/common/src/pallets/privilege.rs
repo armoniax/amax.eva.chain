@@ -1,3 +1,5 @@
+#![allow(clippy::boxed_local)]
+
 use sp_runtime::{traits::StaticLookup, DispatchResult};
 use sp_std::prelude::*;
 
