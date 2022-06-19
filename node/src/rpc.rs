@@ -28,11 +28,11 @@ use fp_storage::EthereumStorageSchema;
 use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
 use runtime_common::EthereumTransaction;
 
-enum TransactionConverters {
+enum TransactionConverter {
     Eva(eva_runtime::TransactionConverter),
     WallE(wall_e_runtime::TransactionConverter),
 }
-impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for TransactionConverters {
+impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for TransactionConverter {
     fn convert_transaction(
         &self,
         transaction: EthereumTransaction,
@@ -44,13 +44,11 @@ impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for Transac
     }
 }
 
-impl From<Chain> for TransactionConverters {
+impl From<Chain> for TransactionConverter {
     fn from(chain: Chain) -> Self {
         match chain {
-            Chain::Eva => TransactionConverters::Eva(eva_runtime::TransactionConverter::new()),
-            Chain::WallE => {
-                TransactionConverters::WallE(wall_e_runtime::TransactionConverter::new())
-            },
+            Chain::Eva => Self::Eva(eva_runtime::TransactionConverter::new()),
+            Chain::WallE => Self::WallE(wall_e_runtime::TransactionConverter::new()),
         }
     }
 }
@@ -195,13 +193,12 @@ where
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
 
-    let converter: TransactionConverters = chain.into();
     io.merge(
         Eth::new(
             client.clone(),
             pool.clone(),
             graph,
-            Some(converter),
+            Some(TransactionConverter::from(chain)),
             network.clone(),
             signers,
             overrides.clone(),
@@ -210,7 +207,7 @@ where
             block_data_cache.clone(),
             fee_history_cache,
             fee_history_cache_limit,
-            fc_rpc::format::Legacy,
+            fc_rpc::format::Geth,
         )
         .into_rpc(),
     )?;
