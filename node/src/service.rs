@@ -393,7 +393,8 @@ where
                 chain,
             };
 
-            crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
+            crate::rpc::create_full(deps, subscription_task_executor, ethapi.clone())
+                .map_err(Into::into)
         })
     };
 
@@ -604,10 +605,11 @@ where
         let overrides = overrides.clone();
         let fee_history_cache = fee_history_cache.clone();
         let max_past_logs = cli.run.max_past_logs;
+        let ethapi = cli.run.ethapi.clone();
         let tracing_requesters = crate::tracing::rpc_requesters(
-            &cli.run.ethapi,
+            &ethapi,
             &crate::tracing::RpcConfig {
-                ethapi: cli.run.ethapi.clone(),
+                ethapi: ethapi.clone(),
                 ethapi_max_permits: cli.run.ethapi_max_permits,
                 ethapi_trace_cache_duration: cli.run.ethapi_trace_cache_duration,
             },
@@ -643,7 +645,8 @@ where
                 command_sink: Some(command_sink.clone()),
             };
 
-            crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
+            crate::rpc::create_full(deps, subscription_task_executor, ethapi.clone())
+                .map_err(Into::into)
         })
     };
 

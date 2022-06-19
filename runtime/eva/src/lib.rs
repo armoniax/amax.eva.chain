@@ -506,6 +506,14 @@ impl fp_self_contained::SelfContainedCall for Call {
     }
 }
 
+/// if the call is the eth tx, return it, else None.
+fn try_get_eth_trx(call: Call) -> Option<EthereumTransaction> {
+    match call {
+        Call::Ethereum(EthereumCall::transact { transaction }) => Some(transaction),
+        _ => None,
+    }
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
@@ -946,6 +954,24 @@ impl_runtime_apis! {
             #[cfg(not(feature = "evm-tracing"))]
             {
                 Err(sp_runtime::DispatchError::Other("Missing `evm-tracing` feature flag."))
+            }
+        }
+    }
+
+    impl primitives_rpc::txpool::TxPoolRuntimeApi<Block> for Runtime {
+        fn extrinsic_filter(
+            xts_ready: Vec<<Block as BlockT>::Extrinsic>,
+            xts_future: Vec<<Block as BlockT>::Extrinsic>,
+        ) -> primitives_rpc::txpool::TxPoolResponse {
+            primitives_rpc::txpool::TxPoolResponse {
+                ready: xts_ready
+                    .into_iter()
+                    .filter_map(|xt| try_get_eth_trx(xt.0.function))
+                    .collect(),
+                future: xts_future
+                    .into_iter()
+                    .filter_map(|xt| try_get_eth_trx(xt.0.function))
+                    .collect(),
             }
         }
     }

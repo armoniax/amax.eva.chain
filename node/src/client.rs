@@ -71,6 +71,7 @@ pub trait RuntimeApiCollection:
     + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
     + pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
     + primitives_rpc::debug::DebugRuntimeApi<Block>
+    + primitives_rpc::txpool::TxPoolRuntimeApi<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
 where
@@ -91,6 +92,7 @@ where
         + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
         + pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
         + primitives_rpc::debug::DebugRuntimeApi<Block>
+        + primitives_rpc::txpool::TxPoolRuntimeApi<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
         + fp_rpc::ConvertTransactionRuntimeApi<Block>,
     <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,

@@ -14,7 +14,8 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
 use fc_rpc::OverrideHandle;
 // Local
 use amax_eva_rpc::{
-    CacheRequester as TraceFilterCacheRequester, CacheTask, TraceRequester, TraceTask,
+    CacheRequester as TraceFilterCacheRequester, CacheTask, DebugHandler, DebugRequester,
+    TraceRequester, TraceTask,
 };
 
 /// Eth RRC extensions.
@@ -51,6 +52,7 @@ pub struct RpcConfig {
 
 #[derive(Clone, Default)]
 pub struct RpcRequesters {
+    pub debug: Option<DebugRequester>,
     pub trace: Option<(TraceRequester, TraceFilterCacheRequester)>,
 }
 
@@ -107,6 +109,19 @@ where
         (None, None, None)
     };
 
+    let (debug_task, debug_requester) = if config.ethapi.contains(&EthApiExt::Debug) {
+        let (debug_task, debug_requester) = DebugHandler::task(
+            params.client.clone(),
+            params.substrate_backend.clone(),
+            params.frontier_backend.clone(),
+            permit_pool.clone(),
+            params.overrides.clone(),
+        );
+        (Some(debug_task), Some(debug_requester))
+    } else {
+        (None, None)
+    };
+
     // `trace_filter` cache task. Essential.
     // Proxies rpc requests to it's handler.
     if let Some(trace_filter_task) = trace_filter_task {
@@ -127,7 +142,17 @@ where
         );
     }
 
-    RpcRequesters { trace: trace_requesters }
+    // `debug` task if enabled. Essential.
+    // Proxies rpc requests to it's handler.
+    if let Some(debug_task) = debug_task {
+        params.task_manager.spawn_essential_handle().spawn(
+            "ethapi-debug",
+            Some("eth-tracing"),
+            debug_task,
+        );
+    }
+
+    RpcRequesters { debug: debug_requester, trace: trace_requesters }
 }
 
 pub fn rpc_requesters<B, C, BE>(

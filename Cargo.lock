@@ -198,14 +198,20 @@ dependencies = [
  "fc-rpc",
  "fp-rpc",
  "futures 0.3.21",
+ "hex-literal",
  "jsonrpsee",
  "primitives-rpc",
+ "rlp",
  "sc-client-api",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
  "sc-utils",
  "serde",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "tokio",
  "tracing",
@@ -216,9 +222,12 @@ name = "amax-eva-rpc-core"
 version = "0.1.0"
 dependencies = [
  "amax-eva-client-evm-tracing",
+ "ethereum",
  "ethereum-types",
+ "fc-rpc-core",
  "futures 0.3.21",
  "jsonrpsee",
+ "parity-scale-codec",
  "serde",
 ]
 

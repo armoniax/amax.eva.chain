@@ -28,6 +28,11 @@ use fp_storage::EthereumStorageSchema;
 use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
 use runtime_common::EthereumTransaction;
 
+use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
+
+use crate::tracing::RpcRequesters as TracingRpcRequesters;
+pub use crate::tracing::{EthApiExt, RpcConfig};
+
 enum TransactionConverter {
     Eva(eva_runtime::TransactionConverter),
     WallE(wall_e_runtime::TransactionConverter),
@@ -52,8 +57,6 @@ impl From<Chain> for TransactionConverter {
         }
     }
 }
-
-use crate::tracing::RpcRequesters as TracingRpcRequesters;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi> {
@@ -133,6 +136,7 @@ where
 pub fn create_full<C, P, BE, A>(
     deps: FullDeps<C, P, A>,
     subscription_task_executor: SubscriptionTaskExecutor,
+    exts: Vec<EthApiExt>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
     BE: Backend<Block> + 'static,
@@ -146,6 +150,7 @@ where
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+    C::Api: primitives_rpc::txpool::TxPoolRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     A: ChainApi<Block = Block> + 'static,
 {
@@ -197,7 +202,7 @@ where
         Eth::new(
             client.clone(),
             pool.clone(),
-            graph,
+            graph.clone(),
             Some(TransactionConverter::from(chain)),
             network.clone(),
             signers,
@@ -247,6 +252,14 @@ where
             )
             .into_rpc(),
         )?;
+    }
+
+    if exts.contains(&EthApiExt::Txpool) {
+        io.merge(TxPoolRpc::new(client.clone(), graph.clone()).into_rpc())?;
+    }
+
+    if let Some(debug_requester) = tracing_requesters.debug {
+        io.merge(DebugRpc::new(debug_requester).into_rpc())?;
     }
 
     #[cfg(feature = "manual-seal")]

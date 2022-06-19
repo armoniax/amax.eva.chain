@@ -28,7 +28,7 @@ use amax_eva_client_evm_tracing::{
 pub use amax_eva_rpc_core::{FilterRequest, TraceServer};
 use primitives_rpc::debug::DebugRuntimeApi;
 
-use crate::TxsTraceRes;
+use super::TxsTraceRes;
 /// An opaque batch ID.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CacheBatchId(u64);
