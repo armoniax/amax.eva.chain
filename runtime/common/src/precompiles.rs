@@ -1,6 +1,6 @@
 // Substrate
 use sp_core::H160;
-use sp_std::{marker::PhantomData, prelude::*};
+use sp_std::{marker::PhantomData, vec::Vec};
 // Frontier
 use pallet_evm::{Precompile, PrecompileHandle, PrecompileResult, PrecompileSet};
 use pallet_evm_precompile_modexp::Modexp;
@@ -8,9 +8,9 @@ use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 
 #[derive(Default)]
-pub struct EvaPrecompiles<R>(PhantomData<R>);
+pub struct FrontierPrecompiles<R>(PhantomData<R>);
 
-impl<R> EvaPrecompiles<R>
+impl<R> FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
 {
@@ -19,11 +19,11 @@ where
     }
 
     pub fn used_addresses() -> Vec<H160> {
-        vec![1, 2, 3, 4, 5, 1024, 1025].into_iter().map(hash).collect()
+        sp_std::vec![1, 2, 3, 4, 5, 1024, 1025].into_iter().map(hash).collect()
     }
 }
 
-impl<R> PrecompileSet for EvaPrecompiles<R>
+impl<R> PrecompileSet for FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
 {

@@ -105,9 +105,10 @@ name = "amax-eva"
 version = "0.1.0"
 dependencies = [
  "amax-eva-rpc",
- "amax-eva-runtime",
  "async-trait",
  "clap",
+ "eva-runtime",
+ "eva-runtime-constants",
  "fc-consensus",
  "fc-db",
  "fc-mapping-sync",
@@ -118,15 +119,20 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
+ "frame-system-rpc-runtime-api",
  "futures 0.3.21",
  "jsonrpsee",
  "libsecp256k1 0.7.0",
  "log",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "primitives-core",
  "primitives-evm-ext",
  "primitives-rpc",
+ "runtime-common",
  "sc-basic-authorship",
+ "sc-chain-spec",
  "sc-cli",
  "sc-client-api",
  "sc-consensus",
@@ -148,15 +154,23 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-aura",
  "sp-core",
+ "sp-finality-grandpa",
  "sp-inherents",
+ "sp-offchain",
  "sp-runtime",
+ "sp-session",
+ "sp-storage",
  "sp-timestamp",
+ "sp-transaction-pool",
+ "sp-trie",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "tiny-bip39",
  "tiny-hderive",
  "tokio",
  "try-runtime-cli",
+ "wall-e-runtime",
+ "wall-e-runtime-constants",
 ]
 
 [[package]]
@@ -206,66 +220,6 @@ dependencies = [
  "futures 0.3.21",
  "jsonrpsee",
  "serde",
-]
-
-[[package]]
-name = "amax-eva-runtime"
-version = "0.1.0"
-dependencies = [
- "amax-eva-runtime-constants",
- "fp-evm",
- "fp-rpc",
- "fp-self-contained",
- "frame-benchmarking",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "frame-try-runtime",
- "hex-literal",
- "pallet-aura",
- "pallet-balances",
- "pallet-base-fee",
- "pallet-collective",
- "pallet-ethereum",
- "pallet-evm",
- "pallet-evm-precompile-modexp",
- "pallet-evm-precompile-sha3fips",
- "pallet-evm-precompile-simple",
- "pallet-grandpa",
- "pallet-membership",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "parity-scale-codec",
- "primitives-core",
- "primitives-evm-tracer",
- "primitives-rpc",
- "scale-info",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-finality-grandpa",
- "sp-inherents",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder",
-]
-
-[[package]]
-name = "amax-eva-runtime-constants"
-version = "0.1.0"
-dependencies = [
- "frame-support",
- "primitives-core",
- "sp-runtime",
 ]
 
 [[package]]
@@ -1718,6 +1672,66 @@ dependencies = [
  "primitive-types",
  "scale-info",
  "uint",
+]
+
+[[package]]
+name = "eva-runtime"
+version = "0.1.0"
+dependencies = [
+ "eva-runtime-constants",
+ "fp-evm",
+ "fp-rpc",
+ "fp-self-contained",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-base-fee",
+ "pallet-collective",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-grandpa",
+ "pallet-membership",
+ "pallet-multisig",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
+ "parity-scale-codec",
+ "primitives-core",
+ "primitives-evm-tracer",
+ "primitives-rpc",
+ "runtime-common",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
+]
+
+[[package]]
+name = "eva-runtime-constants"
+version = "0.1.0"
+dependencies = [
+ "primitives-core",
+ "runtime-common-constants",
 ]
 
 [[package]]
@@ -4698,6 +4712,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-multisig"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
@@ -4791,6 +4820,22 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -5772,6 +5817,42 @@ dependencies = [
  "netlink-proto",
  "nix",
  "thiserror",
+]
+
+[[package]]
+name = "runtime-common"
+version = "0.1.0"
+dependencies = [
+ "fp-rpc",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-base-fee",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-precompile-modexp",
+ "pallet-evm-precompile-sha3fips",
+ "pallet-evm-precompile-simple",
+ "pallet-session",
+ "parity-scale-codec",
+ "primitives-core",
+ "runtime-common-constants",
+ "scale-info",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "runtime-common-constants"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "primitives-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -8761,6 +8842,66 @@ dependencies = [
  "same-file",
  "winapi",
  "winapi-util",
+]
+
+[[package]]
+name = "wall-e-runtime"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "fp-rpc",
+ "fp-self-contained",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-base-fee",
+ "pallet-collective",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-grandpa",
+ "pallet-membership",
+ "pallet-multisig",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
+ "parity-scale-codec",
+ "primitives-core",
+ "primitives-evm-tracer",
+ "primitives-rpc",
+ "runtime-common",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
+ "wall-e-runtime-constants",
+]
+
+[[package]]
+name = "wall-e-runtime-constants"
+version = "0.1.0"
+dependencies = [
+ "primitives-core",
+ "runtime-common-constants",
 ]
 
 [[package]]

@@ -25,7 +25,35 @@ use fc_rpc::{
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
 // Local
-use amax_eva_runtime::{AccountId, Balance, Hash, Index, NodeBlock as Block, TransactionConverter};
+use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
+use runtime_common::EthereumTransaction;
+
+enum TransactionConverters {
+    Eva(eva_runtime::TransactionConverter),
+    WallE(wall_e_runtime::TransactionConverter),
+}
+impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for TransactionConverters {
+    fn convert_transaction(
+        &self,
+        transaction: EthereumTransaction,
+    ) -> primitives_core::UncheckedExtrinsic {
+        match &self {
+            Self::Eva(inner) => inner.convert_transaction(transaction),
+            Self::WallE(inner) => inner.convert_transaction(transaction),
+        }
+    }
+}
+
+impl From<Chain> for TransactionConverters {
+    fn from(chain: Chain) -> Self {
+        match chain {
+            Chain::Eva => TransactionConverters::Eva(eva_runtime::TransactionConverter::new()),
+            Chain::WallE => {
+                TransactionConverters::WallE(wall_e_runtime::TransactionConverter::new())
+            },
+        }
+    }
+}
 
 use crate::tracing::RpcRequesters as TracingRpcRequesters;
 
@@ -63,6 +91,8 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub overrides: Arc<OverrideHandle<Block>>,
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
+    /// Amax Chain Type
+    pub chain: Chain,
     /// Manual seal command sink
     #[cfg(feature = "manual-seal")]
     pub command_sink:
@@ -152,6 +182,7 @@ where
         fee_history_cache_limit,
         overrides,
         block_data_cache,
+        chain,
         #[cfg(feature = "manual-seal")]
         command_sink,
     } = deps;
@@ -163,12 +194,14 @@ where
     if enable_dev_signer {
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
+
+    let converter: TransactionConverters = chain.into();
     io.merge(
         Eth::new(
             client.clone(),
             pool.clone(),
             graph,
-            Some(TransactionConverter),
+            Some(converter),
             network.clone(),
             signers,
             overrides.clone(),

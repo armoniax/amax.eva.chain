@@ -7,7 +7,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode};
 // Substrate
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
@@ -15,23 +14,20 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        PostDispatchInfoOf,
+        OpaqueKeys, PostDispatchInfoOf,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, ConsensusEngineId, Perbill, Permill,
+    ApplyExtrinsicResult, Permill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU32, EnsureOneOf, FindAuthor, KeyOwnerProofSystem},
-    weights::{
-        constants::{RocksDbWeight, WEIGHT_PER_SECOND},
-        ConstantMultiplier, Weight,
-    },
+    traits::{ConstU16, ConstU32, EnsureOneOf, KeyOwnerProofSystem},
+    weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
-use frame_system::{limits, EnsureRoot};
+use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner};
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
@@ -44,16 +40,15 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
-pub use amax_eva_runtime_constants::{evm::*, fee::*, time::*};
-pub use primitives_core::{
+use eva_runtime_constants::{currency, evm, fee, system, time};
+use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
-    OpaqueExtrinsic, Signature,
+    Signature,
 };
-
-mod evm_config;
-use self::evm_config::*;
-mod precompiles;
-use self::precompiles::EvaPrecompiles;
+use runtime_common::{
+    ethereum::CoinbaseAuthor, evm_config, pallets::authorities as pallet_authorities,
+    precompiles::FrontierPrecompiles,
+};
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -62,7 +57,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("armonia-eva"),
     impl_name: create_runtime_str!("armonia-eva"),
     authoring_version: 1,
-    spec_version: 100,
+    spec_version: 1,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -81,19 +76,13 @@ pub fn native_version() -> sp_version::NativeVersion {
 // System && Utility.
 // ################################################################################################
 
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
-/// by  Operational  extrinsics.
-pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 2 seconds of compute with a 6 second average block time.
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
-/// The maximum block length is 5 MB.
-pub const MAXIMUM_BLOCK_LENGTH: u32 = 5 * 1024 * 1024;
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const BlockHashCount: BlockNumber = 2400;
-    pub BlockWeights: limits::BlockWeights = limits::BlockWeights::with_sensible_defaults(MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
-    pub BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(MAXIMUM_BLOCK_LENGTH, NORMAL_DISPATCH_RATIO);
+    pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
+        ::with_sensible_defaults(system::MAXIMUM_BLOCK_WEIGHT, system::NORMAL_DISPATCH_RATIO);
+    pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
+        ::max_with_normal_ratio(system::MAXIMUM_BLOCK_LENGTH, system::NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
 }
 
@@ -150,7 +139,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
+    pub const MinimumPeriod: Moment = time::SLOT_DURATION / 2;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -164,6 +153,30 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_utility::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub const DepositBase: Balance = currency::deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 32);
+}
+
+impl pallet_multisig::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = ConstU16<100>;
+    type WeightInfo = ();
+}
+
 impl pallet_sudo::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -174,6 +187,7 @@ impl pallet_sudo::Config for Runtime {
 // ################################################################################################
 
 parameter_types! {
+    // TODO. need to check this value.
     pub const ExistentialDeposit: Balance = 0;
     pub const MaxLocks: u32 = 50;
     pub const MaxReserves: u32 = 50;
@@ -183,7 +197,7 @@ impl pallet_balances::Config for Runtime {
     type Balance = Balance;
     type DustRemoval = ();
     type Event = Event;
-    type ExistentialDeposit = ExistentialDeposit; // do not kill accounts when balances low.
+    type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     type MaxLocks = MaxLocks;
@@ -192,17 +206,16 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    // TODO need to check byte fee with team
+    // TODO. need to check this value.
     pub const TransactionByteFee: Balance = 1;
-    /// This value increases the priority of `Operational` transactions by adding
-    /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-    pub OperationalFeeMultiplier: u8 = 5;
+    // TODO. need to check this value.
+    pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
-    type WeightToFee = WeightToFee;
+    type WeightToFee = fee::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
 }
@@ -211,15 +224,8 @@ impl pallet_transaction_payment::Config for Runtime {
 // Consensus.
 // ################################################################################################
 
-impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub aura: Aura,
-        pub grandpa: Grandpa,
-    }
-}
-
 parameter_types! {
-    pub const MaxAuthorities: u32 = 32;
+    pub const MaxAuthorities: u32 = 21;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -248,11 +254,44 @@ impl pallet_grandpa::Config for Runtime {
     type MaxAuthorities = MaxAuthorities;
 }
 
+impl_opaque_keys! {
+    pub struct SessionKeys {
+        pub aura: Aura,
+        pub grandpa: Grandpa,
+    }
+}
+
+parameter_types! {
+    pub const Period: BlockNumber = 4 * time::HOURS;
+}
+
+impl pallet_session::Config for Runtime {
+    type Event = Event;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = Authorities;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Period>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Period>;
+    type SessionManager = Authorities;
+    type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = SessionKeys;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_authorities::Config for Runtime {
+    type Event = Event;
+    type MaxAuthorities = MaxAuthorities;
+}
+
 // ################################################################################################
 // Governance.
 // ################################################################################################
 
 parameter_types! {
+    /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
+    /// Motions may end in fewer blocks if enough votes are cast to determine the result.
+    pub const MotionDuration: BlockNumber = 7 * time::DAYS;
+    /// The maximum number of technical committee members.
+    pub const MaxProposals: u32 = 32;
     /// The maximum number of technical committee members.
     pub const TechnicalMaxMembers: u32 = 30;
 }
@@ -264,15 +303,15 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
     type Event = Event;
     /// The maximum amount of time (in blocks) for technical committee members to vote on motions.
     /// Motions may end in fewer blocks if enough votes are cast to determine the result.
-    type MotionDuration = ConstU32<{ 3 * DAYS }>;
+    type MotionDuration = MotionDuration;
     /// The maximum number of Proposals that can be open in the technical committee at once.
-    type MaxProposals = ConstU32<30>;
-    /// The maximum number of technical committee members.
+    type MaxProposals = MaxProposals;
     type MaxMembers = TechnicalMaxMembers;
     type DefaultVote = pallet_collective::PrimeDefaultVote;
     type WeightInfo = ();
 }
 
+/// 2/3 vote right for Technical members.
 type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
     EnsureRoot<AccountId>,
     pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
@@ -296,48 +335,28 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
 // EVM compatibility.
 // ################################################################################################
 
-pub struct FindAuthorTruncated<F>(sp_std::marker::PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(_digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        // TODO change the implementation after bringing in the Session or related pallet to get
-        // accountid.
-        #[cfg(feature = "aura")]
-        if let Some(author_index) = F::find_author(_digests) {
-            use sp_core::crypto::ByteArray;
-            let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]))
-        }
-        None
-    }
-}
-
 parameter_types! {
-    // TODO need to set chainid(for testnet version we will set 161)
     pub const ChainId: u64 = 160;
-    // TODO need to check gaslimt with team
-    pub BlockGasLimit: U256 = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT / WEIGHT_PER_GAS);
-    pub PrecompilesValue: EvaPrecompiles<Runtime> = EvaPrecompiles::<_>::new();
+    pub BlockGasLimit: U256 = U256::from(system::NORMAL_DISPATCH_RATIO * system::MAXIMUM_BLOCK_WEIGHT / evm::WEIGHT_PER_GAS);
+    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
 }
 
 impl pallet_evm::Config for Runtime {
-    type FeeCalculator = FixedGasPrice;
-    type GasWeightMapping = GasWeightMapping;
+    type FeeCalculator = evm_config::FixedGasPrice;
+    type GasWeightMapping = evm_config::GasWeightMapping;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
-    type AddressMapping = IntoAddressMapping;
+    type AddressMapping = evm_config::IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
-    type PrecompilesType = EvaPrecompiles<Self>;
+    type PrecompilesType = FrontierPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = ();
-    type FindAuthor = FindAuthorTruncated<Aura>; // todo need to replace this in future
+    type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {
@@ -347,13 +366,12 @@ impl pallet_ethereum::Config for Runtime {
 
 parameter_types! {
     pub IsActive: bool = true;
-    // TODO need to check this with team
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
 }
 
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
-    type Threshold = BaseFeeThreshold;
+    type Threshold = evm_config::BaseFeeThreshold;
     type IsActive = IsActive;
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
 }
@@ -368,18 +386,22 @@ construct_runtime!(
         // System && Utility.
         System: frame_system = 0,
         Timestamp: pallet_timestamp = 1,
+        Utility: pallet_utility = 2,
+        Multisig: pallet_multisig = 3,
 
         // Monetary.
-        Balances: pallet_balances = 20,
-        TransactionPayment: pallet_transaction_payment = 21,
+        Balances: pallet_balances = 10,
+        TransactionPayment: pallet_transaction_payment = 11,
 
         // Consensus.
-        Aura: pallet_aura = 30,
-        Grandpa: pallet_grandpa = 31,
+        Aura: pallet_aura = 20,
+        Grandpa: pallet_grandpa = 21,
+        Session: pallet_session = 22,
+        Authorities: pallet_authorities = 23,
 
         // Governance.
-        TechnicalCommittee: pallet_collective::<Instance1> = 50,
-        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 51,
+        TechnicalCommittee: pallet_collective::<Instance1> = 30,
+        TechnicalCommitteeMembership: pallet_membership::<Instance1> = 31,
 
         // Evm compatibility.
         EVM: pallet_evm = 100,
@@ -420,24 +442,8 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
-pub struct TransactionConverter;
-impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-    fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-        UncheckedExtrinsic::new_unsigned(
-            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-        )
-    }
-}
-impl fp_rpc::ConvertTransaction<OpaqueExtrinsic> for TransactionConverter {
-    fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> OpaqueExtrinsic {
-        let extrinsic = UncheckedExtrinsic::new_unsigned(
-            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-        );
-        let encoded = extrinsic.encode();
-        OpaqueExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
-    }
-}
-
+pub type TransactionConverter =
+    runtime_common::ethereum::EthTransactionConverter<UncheckedExtrinsic, Runtime>;
 // frontier interface for runtime-api
 impl fp_self_contained::SelfContainedCall for Call {
     type SignedInfo = H160;

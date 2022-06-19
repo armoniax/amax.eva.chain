@@ -1,4 +1,4 @@
-.PHONY: setup fmt-check fmt clippy dev clean check build test-build release test-release test
+.PHONY: setup fmt-check fmt clippy dev clean check build test-build release test-release test ci-clippy
 
 setup:
 	bash ./scripts/setup.sh
@@ -12,7 +12,7 @@ fmt:
 	cargo fmt --all
 
 clippy:
-	cargo +nightly clippy --all --all-targets -- -D warnings
+	cargo clippy --all --all-targets --features runtime-benchmarks,try-runtime -- -D warnings
 
 dev: fmt clippy
 

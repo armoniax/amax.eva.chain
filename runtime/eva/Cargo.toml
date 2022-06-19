@@ -1,5 +1,5 @@
 [package]
-name = "amax-eva-runtime"
+name = "eva-runtime"
 version = "0.1.0"
 edition = "2021"
 authors = ["Armonia Authors"]
@@ -35,9 +35,12 @@ pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "p
 pallet-collective = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-membership = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-multisig = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 # Used for runtime api
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
@@ -55,23 +58,22 @@ fp-self-contained = { git = "https://github.com/armoniax/frontier", branch = "ev
 pallet-base-fee = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 pallet-ethereum = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
-pallet-evm-precompile-modexp = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
-pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
-pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
 
 # Local
-amax-eva-runtime-constants = { path = "constants", default-features = false }
-primitives-core = { path = "../primitives/core", default-features = false }
-primitives-evm-tracer = { path = "../primitives/evm-tracer", default-features = false, optional = true }
-primitives-rpc = { path = "../primitives/rpc", default-features = false }
+primitives-core = { path = "../../primitives/core", default-features = false }
+primitives-evm-tracer = { path = "../../primitives/evm-tracer", default-features = false, optional = true }
+primitives-rpc = { path = "../../primitives/rpc", default-features = false }
+runtime-common = { path = "../common", default-features = false }
+
+eva-runtime-constants = { path = "constants", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 
 [features]
 default = ["std", "aura"]
-aura = []
-manual-seal = []
+aura = ["runtime-common/aura"]
+manual-seal = ["runtime-common/manual-seal"]
 std = [
     # Parity
     "codec/std",
@@ -89,7 +91,7 @@ std = [
     "sp-std/std",
     "sp-transaction-pool/std",
     "sp-version/std",
-    ## Substrate FRAME
+    # Substrate FRAME
     "frame-executive/std",
     "frame-support/std",
     "frame-system/std",
@@ -98,9 +100,12 @@ std = [
     "pallet-collective/std",
     "pallet-grandpa/std",
     "pallet-membership/std",
+    "pallet-multisig/std",
+    "pallet-session/std",
     "pallet-sudo/std",
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
+    "pallet-utility/std",
     "frame-system-rpc-runtime-api/std",
     "pallet-transaction-payment-rpc-runtime-api/std",
     "frame-benchmarking/std",
@@ -112,14 +117,12 @@ std = [
     "pallet-base-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
-    "pallet-evm-precompile-modexp/std",
-    "pallet-evm-precompile-simple/std",
-    "pallet-evm-precompile-sha3fips/std",
     # Local
-    "amax-eva-runtime-constants/std",
     "primitives-core/std",
     "primitives-rpc/std",
     "primitives-evm-tracer/std",
+    "runtime-common/std",
+    "eva-runtime-constants/std",
 ]
 runtime-benchmarks = [
     "hex-literal",
@@ -132,7 +135,10 @@ runtime-benchmarks = [
     "pallet-collective/runtime-benchmarks",
     "pallet-grandpa/runtime-benchmarks",
     "pallet-membership/runtime-benchmarks",
+    "pallet-multisig/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
+    "pallet-utility/runtime-benchmarks",
+    # Frontier
     "pallet-evm/runtime-benchmarks",
     "pallet-ethereum/runtime-benchmarks",
 ]
@@ -146,11 +152,14 @@ try-runtime = [
     "pallet-collective/try-runtime",
     "pallet-grandpa/try-runtime",
     "pallet-membership/try-runtime",
+    "pallet-multisig/try-runtime",
+    "pallet-session/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
+    "pallet-utility/try-runtime",
+    # Frontier
     "pallet-transaction-payment/try-runtime",
     "pallet-ethereum/try-runtime",
 ]
-
 # Must be enabled for tracing runtimes only
 evm-tracing = ["primitives-evm-tracer"]
