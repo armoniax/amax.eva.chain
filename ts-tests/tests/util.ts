@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import { JsonRpcResponse } from "web3-core-helpers";
 import { spawn, ChildProcess } from "child_process";
 
+import { NODE_BINARY_NAME, CHAIN_ID } from "./config";
+
 export const PORT = 19931;
 export const RPC_PORT = 19932;
 export const WS_PORT = 19933;
@@ -11,7 +13,7 @@ export const DISPLAY_LOG = process.env.FRONTIER_LOG || false;
 export const FRONTIER_LOG = process.env.FRONTIER_LOG || "info";
 export const FRONTIER_BUILD = process.env.FRONTIER_BUILD || "release";
 
-export const BINARY_PATH = `../target/${FRONTIER_BUILD}/amax-eva`;
+export const BINARY_PATH = `../target/${FRONTIER_BUILD}/${NODE_BINARY_NAME}`;
 export const SPAWNING_TIME = 60000;
 
 export async function customRequest(web3: Web3, method: string, params: any[]) {
@@ -44,7 +46,7 @@ export async function createAndFinalizeBlock(web3: Web3) {
 	if (!response.result) {
 		throw new Error(`Unexpected result: ${JSON.stringify(response)}`);
 	}
-	await new Promise(resolve => setTimeout(() => resolve(), 500));
+	await new Promise((resolve) => setTimeout(() => resolve(), 500));
 }
 
 // Create a block and finalize it.
@@ -56,10 +58,14 @@ export async function createAndFinalizeBlockNowait(web3: Web3) {
 	}
 }
 
-export async function startFrontierNode(provider?: string): Promise<{ web3: Web3; binary: ChildProcess, ethersjs: ethers.providers.JsonRpcProvider }> {
+export async function startFrontierNode(provider?: string): Promise<{
+	web3: Web3;
+	binary: ChildProcess;
+	ethersjs: ethers.providers.JsonRpcProvider;
+}> {
 	var web3;
-	if (!provider || provider == 'http') {
-		web3 = new Web3(`http://localhost:${RPC_PORT}`);
+	if (!provider || provider == "http") {
+		web3 = new Web3(`http://127.0.0.1:${RPC_PORT}`);
 	}
 
 	const cmd = BINARY_PATH;
@@ -130,12 +136,12 @@ export async function startFrontierNode(provider?: string): Promise<{ web3: Web3
 		binary.stdout.on("data", onData);
 	});
 
-	if (provider == 'ws') {
-		web3 = new Web3(`ws://localhost:${WS_PORT}`);
+	if (provider == "ws") {
+		web3 = new Web3(`ws://127.0.0.1:${WS_PORT}`);
 	}
 
-	let ethersjs = new ethers.providers.StaticJsonRpcProvider(`http://localhost:${RPC_PORT}`, {
-		chainId: 160,
+	let ethersjs = new ethers.providers.StaticJsonRpcProvider(`http://127.0.0.1:${RPC_PORT}`, {
+		chainId: CHAIN_ID,
 		name: "frontier-dev",
 	});
 
@@ -144,7 +150,11 @@ export async function startFrontierNode(provider?: string): Promise<{ web3: Web3
 
 export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }) => void, provider?: string) {
 	describe(title, () => {
-		let context: { web3: Web3, ethersjs: ethers.providers.JsonRpcProvider } = { web3: null, ethersjs: null };
+		let context: {
+			web3: Web3;
+			ethersjs: ethers.providers.JsonRpcProvider;
+		} = { web3: null, ethersjs: null };
+
 		let binary: ChildProcess;
 		// Making sure the Frontier node has started
 		before("Starting Frontier Test Node", async function () {
@@ -210,7 +220,7 @@ export function extendTrace(web3: Web3) {
 		}]
 	});
 
-	let web3_with_debug = web3.extend({
+	let web3_with_debug = web3_with_trace.extend({
 		property: 'debug',
 		methods: [{
 			name: 'traceBlockByNumber',
@@ -227,7 +237,7 @@ export function extendTrace(web3: Web3) {
 		}]
 	});
 	
-	let web3_with_txpool = web3.extend({
+	let web3_with_txpool = web3_with_debug.extend({
 		property: 'txpool',
 		methods: [{
 			name: 'content',
@@ -246,4 +256,8 @@ export function extendTrace(web3: Web3) {
 
 	return web3_with_txpool;
   } // note: some methods must be manually hexified, due to the fact that it takes arrays with hexified values inside
-  
+
+export function describeWithFrontierWs(title: string, cb: (context: { web3: Web3 }) => void) {
+	describeWithFrontier(title, cb, "ws");
+}
+
