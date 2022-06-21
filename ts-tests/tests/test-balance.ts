@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { step } from "mocha-steps";
 
-import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, GENESIS_ACCOUNT_BALANCE, EXISTENIAL_DEPOSIT } from "./config";
+import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, GENESIS_ACCOUNT_BALANCE, EXISTENTIAL_DEPOSIT } from "./config";
 import { createAndFinalizeBlock, describeWithFrontier, customRequest } from "./util";
 
 describeWithFrontier("Frontier RPC (Balance)", (context) => {
@@ -34,7 +34,7 @@ describeWithFrontier("Frontier RPC (Balance)", (context) => {
 			BigInt(21000) * BigInt(gasPrice) -
 			BigInt(value)
 		).toString();
-		const expectedTestBalance = (Number(value) - EXISTENIAL_DEPOSIT).toString();
+		const expectedTestBalance = (Number(value) - EXISTENTIAL_DEPOSIT).toString();
 		expect(await context.web3.eth.getBalance(GENESIS_ACCOUNT, "pending")).to.equal(expectedGenesisBalance);
 		expect(await context.web3.eth.getBalance(TEST_ACCOUNT, "pending")).to.equal(expectedTestBalance);
 
