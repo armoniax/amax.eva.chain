@@ -21,6 +21,7 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v
 ## Substrate FRAME
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+pallet-authorship = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 # Frontier
 fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", default-features = false }
@@ -53,6 +54,7 @@ std = [
     ## Substrate FRAME
     "frame-support/std",
     "frame-system/std",
+    "pallet-authorship/std",
     "pallet-session/std",
     # Frontier
     "fp-rpc/std",
