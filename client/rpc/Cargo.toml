@@ -38,5 +38,5 @@ fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-
 
 # Local
 amax-eva-client-evm-tracing = { path = "../evm-tracing" }
-primitives-rpc = { path = "../../primitives/rpc" }
 amax-eva-rpc-core = { path = "../rpc-core" }
+primitives-rpc = { path = "../../primitives/rpc" }
