@@ -81,7 +81,6 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 		block = await context.web3.eth.getBlock(2);
 		let block_b = await context.web3.eth.getBlock(3);
 		poll = await customRequest(context.web3, "eth_getFilterChanges", ["0x3"]);
-
 		expect(poll.result.length).to.be.eq(2);
 		expect(poll.result[0]).to.be.eq(block.hash);
 		expect(poll.result[1]).to.be.eq(block_b.hash);

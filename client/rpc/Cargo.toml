@@ -1,0 +1,42 @@
+[package]
+name = "amax-eva-rpc"
+version = "0.1.0"
+edition = "2021"
+authors = ["Armonia Authors"]
+license = "GPL-3.0"
+description = "armonia multichain - eva child chain"
+
+[dependencies]
+futures = "0.3"
+hex-literal = "0.3.4"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.10", features = ["sync", "time"] }
+tracing = "0.1.25"
+
+# Parity
+ethereum = { version = "0.12.0", features = ["with-codec"] }
+ethereum-types = "0.13.1"
+jsonrpsee = { version = "0.13.1", features = ["server", "macros"] }
+rlp = "0.5"
+
+# Substrate
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sc-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sc-transaction-pool-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sc-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+
+# Frontier
+fc-db = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22" }
+fc-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22", features = ["rpc_binary_search_estimate"] }
+fp-rpc = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22" }
+
+# Local
+amax-eva-client-evm-tracing = { path = "../evm-tracing" }
+amax-eva-rpc-core = { path = "../rpc-core" }
+primitives-rpc = { path = "../../primitives/rpc" }

@@ -1,0 +1,36 @@
+[package]
+name = "primitives-evm-tracer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Armonia Authors"]
+license = "GPL-3.0"
+description = "armonia multichain - eva child chain"
+
+[dependencies]
+# Parity
+codec = { package = "parity-scale-codec", version = "3.1", default-features = false, features = ["derive"] }
+evm = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false, features = ["with-codec"] }
+evm-gasometer = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false }
+evm-runtime = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false }
+
+# Substrate
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+
+# Local
+primitives-evm-ext = { path = "../evm-ext", default-features = false }
+primitives-evm-tracing-events = { path = "../evm-tracing-events", default-features = false, features = ["evm-tracing"] }
+
+[features]
+default = ["std"]
+std = [
+    # Parity
+    "codec/std",
+    "evm/std",
+    "evm-gasometer/std",
+    "evm-runtime/std",
+    # Substrate
+    "sp-std/std",
+    # Local
+    "primitives-evm-ext/std",
+    "primitives-evm-tracing-events/std",
+]

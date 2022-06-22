@@ -57,7 +57,6 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
 		);
-
 		await customRequest(context.web3, "eth_sendRawTransaction", [tx1.rawTransaction]);
 
 		let getStoragePending = await customRequest(context.web3, "eth_getStorageAt", [

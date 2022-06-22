@@ -13,6 +13,7 @@ mod command_helper;
 mod manual_seal;
 mod rpc;
 mod service;
+mod tracing;
 
 pub use self::{cli::*, command::*};
 pub use sc_cli::{Error, Result};

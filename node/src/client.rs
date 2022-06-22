@@ -29,7 +29,7 @@ impl sc_executor::NativeExecutionDispatch for EvaExecutor {
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
     /// Otherwise we only use the default Substrate host functions.
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type ExtendHostFunctions = ();
+    type ExtendHostFunctions = primitives_evm_ext::evm_ext::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         eva_runtime::api::dispatch(method, data)
@@ -47,7 +47,7 @@ impl sc_executor::NativeExecutionDispatch for WallEExecutor {
     #[cfg(feature = "runtime-benchmarks")]
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type ExtendHostFunctions = ();
+    type ExtendHostFunctions = primitives_evm_ext::evm_ext::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         wall_e_runtime::api::dispatch(method, data)
@@ -70,6 +70,8 @@ pub trait RuntimeApiCollection:
     + sp_finality_grandpa::GrandpaApi<Block>
     + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
     + pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
+    + primitives_rpc::debug::DebugRuntimeApi<Block>
+    + primitives_rpc::txpool::TxPoolRuntimeApi<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
 where
@@ -89,6 +91,8 @@ where
         + sp_finality_grandpa::GrandpaApi<Block>
         + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
         + pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
+        + primitives_rpc::debug::DebugRuntimeApi<Block>
+        + primitives_rpc::txpool::TxPoolRuntimeApi<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
         + fp_rpc::ConvertTransactionRuntimeApi<Block>,
     <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,

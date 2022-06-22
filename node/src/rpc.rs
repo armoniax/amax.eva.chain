@@ -28,6 +28,11 @@ use fp_storage::EthereumStorageSchema;
 use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
 use runtime_common::EthereumTransaction;
 
+use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
+
+use crate::tracing::RpcRequesters as TracingRpcRequesters;
+pub use crate::tracing::{EthApiExt, RpcConfig};
+
 enum TransactionConverter {
     Eva(eva_runtime::TransactionConverter),
     WallE(wall_e_runtime::TransactionConverter),
@@ -75,6 +80,10 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub backend: Arc<fc_db::Backend<Block>>,
     /// Maximum number of logs in a query.
     pub max_past_logs: u32,
+    /// tracing requesters
+    pub tracing_requesters: TracingRpcRequesters,
+    /// trace filter max count
+    pub trace_filter_max_count: u32,
     /// Fee history cache.
     pub fee_history_cache: FeeHistoryCache,
     /// Maximum fee history cache size.
@@ -127,6 +136,7 @@ where
 pub fn create_full<C, P, BE, A>(
     deps: FullDeps<C, P, A>,
     subscription_task_executor: SubscriptionTaskExecutor,
+    exts: Vec<EthApiExt>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
     BE: Backend<Block> + 'static,
@@ -140,6 +150,7 @@ where
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+    C::Api: primitives_rpc::txpool::TxPoolRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     A: ChainApi<Block = Block> + 'static,
 {
@@ -153,6 +164,8 @@ where
         Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
         EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
     };
+    // Local
+    use amax_eva_rpc::{Trace, TraceServer};
 
     let mut io = RpcModule::new(());
     let FullDeps {
@@ -166,6 +179,8 @@ where
         filter_pool,
         backend,
         max_past_logs,
+        tracing_requesters,
+        trace_filter_max_count,
         fee_history_cache,
         fee_history_cache_limit,
         overrides,
@@ -187,7 +202,7 @@ where
         Eth::new(
             client.clone(),
             pool.clone(),
-            graph,
+            graph.clone(),
             Some(TransactionConverter::from(chain)),
             network.clone(),
             signers,
@@ -225,7 +240,27 @@ where
         .into_rpc(),
     )?;
     io.merge(Net::new(client.clone(), network, true).into_rpc())?;
-    io.merge(Web3::new(client).into_rpc())?;
+    io.merge(Web3::new(client.clone()).into_rpc())?;
+
+    if let Some((trace_requester, trace_filter_requester)) = tracing_requesters.trace {
+        io.merge(
+            Trace::new(
+                client.clone(),
+                trace_filter_requester,
+                trace_requester,
+                trace_filter_max_count,
+            )
+            .into_rpc(),
+        )?;
+    }
+
+    if exts.contains(&EthApiExt::Txpool) {
+        io.merge(TxPoolRpc::new(client, graph).into_rpc())?;
+    }
+
+    if let Some(debug_requester) = tracing_requesters.debug {
+        io.merge(DebugRpc::new(debug_requester).into_rpc())?;
+    }
 
     #[cfg(feature = "manual-seal")]
     if let Some(command_sink) = command_sink {

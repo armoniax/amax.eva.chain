@@ -62,6 +62,8 @@ pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polka
 
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
+primitives-evm-tracer = { path = "../../primitives/evm-tracer", default-features = false, optional = true }
+primitives-rpc = { path = "../../primitives/rpc", default-features = false }
 runtime-common = { path = "../common", default-features = false }
 
 wall-e-runtime-constants = { path = "constants", default-features = false }
@@ -119,6 +121,8 @@ std = [
     "pallet-evm/std",
     # Local
     "primitives-core/std",
+    "primitives-rpc/std",
+    "primitives-evm-tracer/std",
     "runtime-common/std",
     "wall-e-runtime-constants/std",
 ]
@@ -160,3 +164,5 @@ try-runtime = [
     "pallet-transaction-payment/try-runtime",
     "pallet-ethereum/try-runtime",
 ]
+# Must be enabled for tracing runtimes only
+evm-tracing = ["primitives-evm-tracer"]

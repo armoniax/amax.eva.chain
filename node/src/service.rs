@@ -354,6 +354,23 @@ where
         let overrides = overrides.clone();
         let fee_history_cache = fee_history_cache.clone();
         let max_past_logs = cli.run.max_past_logs;
+        let ethapi = cli.run.ethapi.clone();
+        let tracing_requesters = crate::tracing::rpc_requesters(
+            &ethapi,
+            &crate::tracing::RpcConfig {
+                ethapi: ethapi.clone(),
+                ethapi_max_permits: cli.run.ethapi_max_permits,
+                ethapi_trace_cache_duration: cli.run.ethapi_trace_cache_duration,
+            },
+            crate::tracing::SpawnTasksParams {
+                task_manager: &task_manager,
+                client: client.clone(),
+                substrate_backend: backend.clone(),
+                frontier_backend: frontier_backend.clone(),
+                overrides: overrides.clone(),
+            },
+        );
+        let trace_filter_max_count = cli.run.ethapi_trace_max_count;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -367,6 +384,8 @@ where
                 filter_pool: filter_pool.clone(),
                 backend: frontier_backend.clone(),
                 max_past_logs,
+                tracing_requesters: tracing_requesters.clone(),
+                trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
                 overrides: overrides.clone(),
@@ -374,7 +393,8 @@ where
                 chain,
             };
 
-            crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
+            crate::rpc::create_full(deps, subscription_task_executor, ethapi.clone())
+                .map_err(Into::into)
         })
     };
 
@@ -506,6 +526,7 @@ where
         ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
     RuntimeApi::RuntimeApi:
         RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+
     Executor: NativeExecutionDispatch + 'static,
 {
     let PartialComponents {
@@ -584,6 +605,23 @@ where
         let overrides = overrides.clone();
         let fee_history_cache = fee_history_cache.clone();
         let max_past_logs = cli.run.max_past_logs;
+        let ethapi = cli.run.ethapi.clone();
+        let tracing_requesters = crate::tracing::rpc_requesters(
+            &ethapi,
+            &crate::tracing::RpcConfig {
+                ethapi: ethapi.clone(),
+                ethapi_max_permits: cli.run.ethapi_max_permits,
+                ethapi_trace_cache_duration: cli.run.ethapi_trace_cache_duration,
+            },
+            crate::tracing::SpawnTasksParams {
+                task_manager: &task_manager,
+                client: client.clone(),
+                substrate_backend: backend.clone(),
+                frontier_backend: frontier_backend.clone(),
+                overrides: overrides.clone(),
+            },
+        );
+        let trace_filter_max_count = cli.run.ethapi_trace_max_count;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -597,6 +635,8 @@ where
                 filter_pool: filter_pool.clone(),
                 backend: frontier_backend.clone(),
                 max_past_logs,
+                tracing_requesters: tracing_requesters.clone(),
+                trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
                 overrides: overrides.clone(),
@@ -605,7 +645,8 @@ where
                 command_sink: Some(command_sink.clone()),
             };
 
-            crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
+            crate::rpc::create_full(deps, subscription_task_executor, ethapi.clone())
+                .map_err(Into::into)
         })
     };
 

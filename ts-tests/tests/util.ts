@@ -76,12 +76,17 @@ export async function startFrontierNode(provider?: string): Promise<{
 		`--no-telemetry`,
 		`--no-prometheus`,
 		`--sealing=Manual`,
+        `--unsafe-ws-external`,
+        `--unsafe-rpc-external`,
 		`--no-grandpa`,
 		`--force-authoring`,
 		`-l${FRONTIER_LOG}`,
 		`--port=${PORT}`,
 		`--rpc-port=${RPC_PORT}`,
 		`--ws-port=${WS_PORT}`,
+		`--ethapi`, `trace`,
+		`--ethapi`, `txpool`,
+		`--ethapi`, `debug`,
 		`--tmp`,
 	];
 	const binary = spawn(cmd, args);
@@ -149,11 +154,13 @@ export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }
 			web3: Web3;
 			ethersjs: ethers.providers.JsonRpcProvider;
 		} = { web3: null, ethersjs: null };
+
 		let binary: ChildProcess;
 		// Making sure the Frontier node has started
 		before("Starting Frontier Test Node", async function () {
 			this.timeout(SPAWNING_TIME);
-			const init = await startFrontierNode(provider);
+			let init = await startFrontierNode(provider);
+			init.web3 = extendTrace(init.web3)
 			context.web3 = init.web3;
 			context.ethersjs = init.ethersjs;
 			binary = init.binary;
@@ -168,6 +175,89 @@ export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }
 	});
 }
 
+// extends web3 for usage with parity's `trace` module
+export function extendTrace(web3: Web3) {
+	let web3_with_trace = web3.extend({
+		property: 'trace',
+		methods: [{
+			name: 'call',
+			call: 'trace_call',
+			params: 2
+		}, {
+			name: 'callMany',
+			call: 'trace_callMany',
+			params: 2
+		}, {
+			name: 'rawTransaction',
+			call: 'trace_rawTransaction',
+			params: 2
+		}, {
+			name: 'replayBlockTransactions',
+			call: 'trace_replayBlockTransactions',
+			params: 2,
+			// inputFormatter: [web3.extend.formatters.inputBlockNumberFormatter,null]
+		}, {
+			name: 'replayTransaction',
+			call: 'trace_replayTransaction',
+			params: 2
+		}, {
+			name: 'block',
+			call: 'trace_block',
+			params: 1,
+			// inputFormatter: [web3.extend.formatters.inputBlockNumberFormatter]
+		}, {
+			name: 'filter',
+			call: 'trace_filter',
+			params: 1
+		}, {
+			name: 'get',
+			call: 'trace_get',
+			params: 2
+		}, {
+			name: 'transaction',
+			call: 'trace_transaction',
+			params: 1
+		}]
+	});
+
+	let web3_with_debug = web3_with_trace.extend({
+		property: 'debug',
+		methods: [{
+			name: 'traceBlockByNumber',
+			call: 'debug_traceBlockByNumber',
+			params: 2
+		}, {
+			name: 'traceBlockByHash',
+			call: 'debug_traceBlockByHash',
+			params: 2
+		}, {
+			name: 'traceTransaction',
+			call: 'debug_traceTransaction',
+			params: 2
+		}]
+	});
+	
+	let web3_with_txpool = web3_with_debug.extend({
+		property: 'txpool',
+		methods: [{
+			name: 'content',
+			call: 'txpool_content',
+			params: 0
+		}, {
+			name: 'inspect',
+			call: 'txpool_inspect',
+			params: 0
+		}, {
+			name: 'status',
+			call: 'txpool_status',
+			params: 0
+		}]
+	});
+
+	return web3_with_txpool;
+  } // note: some methods must be manually hexified, due to the fact that it takes arrays with hexified values inside
+
 export function describeWithFrontierWs(title: string, cb: (context: { web3: Web3 }) => void) {
 	describeWithFrontier(title, cb, "ws");
 }
+

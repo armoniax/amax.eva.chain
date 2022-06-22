@@ -99,7 +99,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --locked --verbose --no-default-features --features manual-seal,rpc_binary_search_estimate
+          args: --release --locked --verbose --no-default-features --features manual-seal,rpc_binary_search_estimate,evm-tracing
 
       - name: Setup Node.js v10
         uses: actions/setup-node@v3

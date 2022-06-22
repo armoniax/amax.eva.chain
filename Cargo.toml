@@ -1,5 +1,10 @@
 [workspace]
 members = [
+    # Client
+    "client/evm-tracing",
+    "client/rpc",
+    "client/rpc-core",
+
     # Node
     "node",
 
@@ -13,6 +18,10 @@ members = [
 
     # Primitives
     "primitives/core",
+    "primitives/rpc",
+    "primitives/evm-tracing-events",
+    "primitives/evm-ext",
+    "primitives/evm-tracer",
 ]
 resolver = "2"
 

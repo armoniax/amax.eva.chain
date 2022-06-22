@@ -104,6 +104,7 @@ dependencies = [
 name = "amax-eva"
 version = "0.1.0"
 dependencies = [
+ "amax-eva-rpc",
  "async-trait",
  "clap",
  "eva-runtime",
@@ -127,6 +128,8 @@ dependencies = [
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
  "primitives-core",
+ "primitives-evm-ext",
+ "primitives-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -168,6 +171,64 @@ dependencies = [
  "try-runtime-cli",
  "wall-e-runtime",
  "wall-e-runtime-constants",
+]
+
+[[package]]
+name = "amax-eva-client-evm-tracing"
+version = "0.1.0"
+dependencies = [
+ "ethereum-types",
+ "hex",
+ "log",
+ "parity-scale-codec",
+ "primitives-evm-tracing-events",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "amax-eva-rpc"
+version = "0.1.0"
+dependencies = [
+ "amax-eva-client-evm-tracing",
+ "amax-eva-rpc-core",
+ "ethereum",
+ "ethereum-types",
+ "fc-db",
+ "fc-rpc",
+ "fp-rpc",
+ "futures 0.3.21",
+ "hex-literal",
+ "jsonrpsee",
+ "primitives-rpc",
+ "rlp",
+ "sc-client-api",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "sc-utils",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "amax-eva-rpc-core"
+version = "0.1.0"
+dependencies = [
+ "amax-eva-client-evm-tracing",
+ "ethereum",
+ "ethereum-types",
+ "fc-rpc-core",
+ "futures 0.3.21",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "serde",
 ]
 
 [[package]]
@@ -1656,6 +1717,8 @@ dependencies = [
  "pallet-utility",
  "parity-scale-codec",
  "primitives-core",
+ "primitives-evm-tracer",
+ "primitives-rpc",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -2625,6 +2688,9 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "hex-literal"
@@ -5167,6 +5233,57 @@ dependencies = [
  "account",
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "primitives-evm-ext"
+version = "0.1.0"
+dependencies = [
+ "ethereum-types",
+ "parity-scale-codec",
+ "primitives-evm-tracing-events",
+ "sp-externalities",
+ "sp-runtime-interface",
+ "sp-std",
+]
+
+[[package]]
+name = "primitives-evm-tracer"
+version = "0.1.0"
+dependencies = [
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
+ "parity-scale-codec",
+ "primitives-evm-ext",
+ "primitives-evm-tracing-events",
+ "sp-std",
+]
+
+[[package]]
+name = "primitives-evm-tracing-events"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "ethereum",
+ "ethereum-types",
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
+ "parity-scale-codec",
+ "sp-runtime-interface",
+]
+
+[[package]]
+name = "primitives-rpc"
+version = "0.1.0"
+dependencies = [
+ "ethereum",
+ "ethereum-types",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -8771,6 +8888,8 @@ dependencies = [
  "pallet-utility",
  "parity-scale-codec",
  "primitives-core",
+ "primitives-evm-tracer",
+ "primitives-rpc",
  "runtime-common",
  "scale-info",
  "sp-api",
