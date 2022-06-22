@@ -320,8 +320,7 @@ where
             api.initialize_block(&parent_block_id, &header)
                 .map_err(|e| internal_err(format!("Runtime api access error: {:?}", e)))?;
 
-            let _result = api
-                .trace_block(&parent_block_id, ext, eth_tx_hashes)
+            api.trace_block(&parent_block_id, ext, eth_tx_hashes)
                 .map_err(|e| {
                     internal_err(format!(
                         "Blockchain error when replaying block {} : {:?}",
@@ -429,8 +428,7 @@ where
                     api.initialize_block(&parent_block_id, &header)
                         .map_err(|e| internal_err(format!("Runtime api access error: {:?}", e)))?;
 
-                    let _result = api
-                        .trace_transaction(&parent_block_id, ext, transaction)
+                    api.trace_transaction(&parent_block_id, ext, transaction)
                         .map_err(|e| internal_err(format!("Runtime api access error : {:?}", e)))?
                         .map_err(|e| internal_err(format!("DispatchError: {:?}", e)))?;
 

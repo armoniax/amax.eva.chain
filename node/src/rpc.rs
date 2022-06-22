@@ -255,7 +255,7 @@ where
     }
 
     if exts.contains(&EthApiExt::Txpool) {
-        io.merge(TxPoolRpc::new(client.clone(), graph.clone()).into_rpc())?;
+        io.merge(TxPoolRpc::new(client, graph).into_rpc())?;
     }
 
     if let Some(debug_requester) = tracing_requesters.debug {

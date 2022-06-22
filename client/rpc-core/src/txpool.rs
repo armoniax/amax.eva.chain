@@ -26,7 +26,7 @@ pub trait Get {
 }
 
 /// The exact details of the transaction currently pending for inclusion in the next block(s).
-#[derive(Debug, Default, Clone, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Content {
     /// Block hash

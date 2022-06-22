@@ -19,7 +19,7 @@ use amax_eva_rpc::{
 };
 
 /// Eth RRC extensions.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum EthApiExt {
     Txpool,
     Debug,
@@ -114,7 +114,7 @@ where
             params.client.clone(),
             params.substrate_backend.clone(),
             params.frontier_backend.clone(),
-            permit_pool.clone(),
+            permit_pool,
             params.overrides.clone(),
         );
         (Some(debug_task), Some(debug_requester))

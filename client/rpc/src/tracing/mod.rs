@@ -294,7 +294,7 @@ where
     async fn transaction_traces(&self, hash: H256) -> RpcResult<Option<Vec<TransactionTrace>>> {
         let server = self.clone();
 
-        server.transaction_traces(hash).await.map_err(|e| fc_rpc::internal_err(e))
+        server.transaction_traces(hash).await.map_err(fc_rpc::internal_err)
     }
 
     async fn filter(&self, filter: FilterRequest) -> RpcResult<Vec<TransactionTrace>> {
@@ -305,7 +305,7 @@ where
         &self,
         number: RequestBlockId,
     ) -> RpcResult<Option<Vec<TransactionTrace>>> {
-        self.clone().block_traces(number).await.map_err(|e| fc_rpc::internal_err(e))
+        self.clone().block_traces(number).await.map_err(fc_rpc::internal_err)
     }
 
     /// Executes the transaction with the given hash and returns a number of possible traces for it.
