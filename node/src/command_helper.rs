@@ -22,7 +22,7 @@
 use std::{sync::Arc, time::Duration};
 
 use sc_client_api::UsageProvider;
-use sp_core::{crypto::DEV_PHRASE, ecdsa, Encode, Pair};
+use sp_core::{crypto::DEV_PHRASE, ecdsa, Encode};
 use sp_inherents::{InherentData, InherentDataProvider};
 use sp_runtime::OpaqueExtrinsic;
 
@@ -159,7 +159,10 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
             (period, current_block, nonce, tip, call, genesis),
             {
                 // Use the payload to generate a signature.
-                let signature = raw_payload.using_encoded(|e| sender.sign(e));
+                let signature = raw_payload.using_encoded(|e| {
+                    let msg = sp_core::hashing::keccak_256(e);
+                    sender.sign_prehashed(&msg)
+                });
                 let signed = get_account_id_from_pair(sender).expect("must can generate account_id");
                 let ext = runtime::UncheckedExtrinsic::new_signed(
                     call,
