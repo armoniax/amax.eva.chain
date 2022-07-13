@@ -118,7 +118,7 @@ fn genesis(
     technical_committee: Vec<AccountId>,
 ) -> GenesisConfig {
     use wall_e_runtime::{
-        AuthoritiesConfig, BalancesConfig, SessionConfig, SudoConfig, SystemConfig,
+        AuthoritiesConfig, BalancesConfig, BaseFeeConfig, SessionConfig, SudoConfig, SystemConfig,
         TechnicalCommitteeConfig,
     };
     GenesisConfig {
@@ -150,7 +150,11 @@ fn genesis(
         // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
-        base_fee: Default::default(),
+        base_fee: {
+            let mut d = BaseFeeConfig::default();
+            d.is_active = false;
+            d
+        },
         sudo: SudoConfig {
             // Assign network admin rights.
             key: Some(root_key),
