@@ -14,7 +14,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        OpaqueKeys, PostDispatchInfoOf,
+        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
     ApplyExtrinsicResult, Permill,
@@ -24,7 +24,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU16, ConstU32, EnsureOneOf, KeyOwnerProofSystem},
+    traits::{ConstU16, ConstU32, EitherOfDiverse, KeyOwnerProofSystem},
     weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
@@ -333,7 +333,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 }
 
 /// 2/3 vote right for Technical members.
-type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+type EnsureRootOrTwoThirdsTechnicalCommittee = EitherOfDiverse<
     EnsureRoot<AccountId>,
     pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
 >;
@@ -500,9 +500,11 @@ impl fp_self_contained::SelfContainedCall for Call {
     fn pre_dispatch_self_contained(
         &self,
         info: &Self::SignedInfo,
+        dispatch_info: &DispatchInfoOf<Call>,
+        len: usize,
     ) -> Option<Result<(), TransactionValidityError>> {
         match self {
-            Call::Ethereum(call) => call.pre_dispatch_self_contained(info),
+            Call::Ethereum(call) => call.pre_dispatch_self_contained(info, dispatch_info, len),
             _ => None,
         }
     }
@@ -798,19 +800,23 @@ impl_runtime_apis! {
             } else {
                 None
             };
+
             let is_transactional = false;
+            let validate = true;
+            let evm_config = config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config());
             <Runtime as pallet_evm::Config>::Runner::call(
                 from,
                 to,
                 data,
                 value,
-                gas_limit.low_u64(),
+                gas_limit.unique_saturated_into(),
                 max_fee_per_gas,
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
                 is_transactional,
-                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+                validate,
+                evm_config,
             ).map_err(|err| err.error.into())
         }
 
@@ -832,18 +838,22 @@ impl_runtime_apis! {
             } else {
                 None
             };
+
             let is_transactional = false;
+            let validate = true;
+            let evm_config = config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config());
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
                 data,
                 value,
-                gas_limit.low_u64(),
+                gas_limit.unique_saturated_into(),
                 max_fee_per_gas,
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
                 is_transactional,
-                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+                validate,
+                evm_config,
             ).map_err(|err| err.error.into())
         }
 

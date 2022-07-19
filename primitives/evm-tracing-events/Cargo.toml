@@ -17,7 +17,7 @@ evm-gasometer = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2
 evm-runtime = { git = "https://github.com/rust-blockchain/evm", rev = "01bcbd2205a212c34451d3b4fabc962793b057d3", default-features = false }
 
 # Substrate
-sp-runtime-interface = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+sp-runtime-interface = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false }
 
 [features]
 default = ["std"]

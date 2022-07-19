@@ -2,7 +2,7 @@
 # This script is meant to be run on Unix/Linux based systems
 set -e
 
-echo "*** Initializing develop environment"
+echo "Initializing development environment"
 
 function install_rustup {
   echo "Installing Rust Toolchain..."
