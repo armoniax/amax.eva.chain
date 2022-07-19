@@ -155,10 +155,10 @@ where
     A: ChainApi<Block = Block> + 'static,
 {
     // Substrate
-    use pallet_transaction_payment_rpc::{TransactionPaymentApiServer, TransactionPaymentRpc};
+    use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     #[cfg(feature = "manual-seal")]
     use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
-    use substrate_frame_rpc_system::{SystemApiServer, SystemRpc};
+    use substrate_frame_rpc_system::{System, SystemApiServer};
     // Frontier
     use fc_rpc::{
         Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
@@ -190,8 +190,8 @@ where
         command_sink,
     } = deps;
 
-    io.merge(SystemRpc::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
-    io.merge(TransactionPaymentRpc::new(client.clone()).into_rpc())?;
+    io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+    io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
     let mut signers = Vec::new();
     if enable_dev_signer {

@@ -823,7 +823,7 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
             Duration::new(2, 0),
             client.clone(),
             backend,
-            frontier_backend.clone(),
+            frontier_backend,
             3,
             0,
             SyncStrategy::Normal,
@@ -846,17 +846,6 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
     task_manager.spawn_essential_handle().spawn(
         "frontier-fee-history",
         Some("frontier"),
-        EthTask::fee_history_task(
-            client.clone(),
-            overrides,
-            fee_history_cache,
-            fee_history_cache_limit,
-        ),
-    );
-
-    task_manager.spawn_essential_handle().spawn(
-        "frontier-schema-cache-task",
-        Some("frontier"),
-        EthTask::ethereum_schema_cache_task(client, frontier_backend),
+        EthTask::fee_history_task(client, overrides, fee_history_cache, fee_history_cache_limit),
     );
 }

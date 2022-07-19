@@ -7,8 +7,8 @@ license = "GPL-3.0"
 description = "armonia multichain - eva child chain"
 
 [dependencies]
-futures = { version = "0.3.1", features = ["compat"] }
-jsonrpsee = { version = "0.13.1", features = ["server", "macros"] }
+futures = "0.3"
+jsonrpsee = { version = "0.14.0", features = ["server", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 
 # Parity
@@ -17,7 +17,7 @@ ethereum = { version = "0.12.0", features = ["with-codec", "with-serde"] }
 ethereum-types = "0.13.1"
 
 # Frontier
-fc-rpc-core = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.22" }
+fc-rpc-core = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.25" }
 
 # Local
 amax-eva-client-evm-tracing = { path = "../evm-tracing" }
