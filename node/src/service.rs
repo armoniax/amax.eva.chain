@@ -846,11 +846,6 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
     task_manager.spawn_essential_handle().spawn(
         "frontier-fee-history",
         Some("frontier"),
-        EthTask::fee_history_task(
-            client,
-            overrides,
-            fee_history_cache,
-            fee_history_cache_limit,
-        ),
+        EthTask::fee_history_task(client, overrides, fee_history_cache, fee_history_cache_limit),
     );
 }
