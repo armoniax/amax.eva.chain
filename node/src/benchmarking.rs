@@ -21,122 +21,56 @@
 
 use std::{sync::Arc, time::Duration};
 
+// Substrate
 use sc_client_api::UsageProvider;
 use sp_core::{crypto::DEV_PHRASE, ecdsa, Encode};
 use sp_inherents::{InherentData, InherentDataProvider};
 use sp_runtime::OpaqueExtrinsic;
+// Local
+use primitives_core::{AccountId, Balance};
 
 use crate::{
     chain_spec::key_helper::{derive_bip44_pairs_from_mnemonic, get_account_id_from_pair},
     client::Client,
 };
 
-macro_rules! signed_payload {
-    (
-	$extra:ident, $raw_payload:ident,
-	(
-		$period:expr,
-		$current_block:expr,
-		$nonce:expr,
-		$tip:expr,
-		$call:expr,
-		$genesis:expr
-	)
-	) => {
-        let $extra: runtime::SignedExtra = (
-            frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-            frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
-            frame_system::CheckTxVersion::<runtime::Runtime>::new(),
-            frame_system::CheckGenesis::<runtime::Runtime>::new(),
-            frame_system::CheckEra::<runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
-                $period,
-                $current_block,
-            )),
-            frame_system::CheckNonce::<runtime::Runtime>::from($nonce),
-            frame_system::CheckWeight::<runtime::Runtime>::new(),
-            pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from($tip),
-        );
-
-        let $raw_payload = runtime::SignedPayload::from_raw(
-            $call.clone(),
-            $extra.clone(),
-            (
-                (),
-                runtime::VERSION.spec_version,
-                runtime::VERSION.transaction_version,
-                $genesis.clone(),
-                $genesis,
-                (),
-                (),
-                (),
-            ),
-        );
-    };
-}
-
-macro_rules! with_signed_payload {
-	{
-		$multi_client:ident,
-		{
-			$extra:ident,
-			$client:ident,
-			$raw_payload:ident
-		},
-		{
-			$( $setup:tt )*
-		},
-		(
-			$period:expr,
-			$current_block:expr,
-			$nonce:expr,
-			$tip:expr,
-			$call:expr,
-			$genesis:expr
-		),
-		{
-			$( $usage:tt )*
-		}
-	} => {
-		match $multi_client {
-			Client::Eva($client) => {
-				use eva_runtime as runtime;
-
-				$( $setup )*
-
-				signed_payload!($extra, $raw_payload,
-					($period, $current_block, $nonce, $tip, $call, $genesis));
-
-				$( $usage )*
-			},
-			Client::WallE($client) => {
-				use wall_e_runtime as runtime;
-
-				$( $setup )*
-
-				signed_payload!($extra, $raw_payload,
-					($period, $current_block, $nonce, $tip, $call, $genesis));
-
-				$( $usage )*
-			},
-		}
-	}
-}
-
 /// Generates extrinsics for the `benchmark overhead` command.
 ///
 /// Note: Should only be used for benchmarking.
-pub struct BenchmarkExtrinsicBuilder {
+pub struct RemarkBuilder {
     client: Arc<Client>,
 }
 
-impl BenchmarkExtrinsicBuilder {
+impl RemarkBuilder {
     /// Creates a new [`Self`] from the given client.
     pub fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 }
 
-impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
+impl frame_benchmarking_cli::ExtrinsicBuilder for RemarkBuilder {
+    fn pallet(&self) -> &str {
+        "system"
+    }
+
+    fn extrinsic(&self) -> &str {
+        "remark"
+    }
+
+    fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
+        let acc = Sr25519Keyring::Bob.pair();
+        let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
+            self.client.as_ref(),
+            acc,
+            SystemCall::remark { remark: vec![] }.into(),
+            nonce,
+        )
+        .into();
+
+        Ok(extrinsic)
+    }
+
+    /*
     fn remark(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
         let acc = derive_bip44_pairs_from_mnemonic::<ecdsa::Public>(DEV_PHRASE, 2);
         let sender = acc[1].clone();
@@ -174,7 +108,74 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
             }
         }
     }
+    */
 }
+
+/// Generates `Balances::TransferKeepAlive` extrinsics for the benchmarks.
+///
+/// Note: Should only be used for benchmarking.
+pub struct TransferKeepAliveBuilder {
+    client: Arc<Client>,
+    dest: AccountId,
+    value: Balance,
+}
+
+impl TransferKeepAliveBuilder {
+    /// Creates a new [`Self`] from the given client.
+    pub fn new(client: Arc<Client>, dest: AccountId, value: Balance) -> Self {
+        Self {
+            client,
+            dest,
+            value,
+        }
+    }
+}
+
+impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
+    fn pallet(&self) -> &str {
+        "balances"
+    }
+
+    fn extrinsic(&self) -> &str {
+        "transfer_keep_alive"
+    }
+
+    fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
+        let acc = Sr25519Keyring::Bob.pair();
+        let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
+            self.client.as_ref(),
+            acc,
+            BalancesCall::transfer_keep_alive {
+                dest: self.dest.clone().into(),
+                value: self.value,
+            }
+            .into(),
+            nonce,
+        )
+        .into();
+
+        Ok(extrinsic)
+    }
+}
+
+/*
+/// Provides the existential deposit that is only needed for benchmarking.
+pub trait ExistentialDepositProvider {
+    /// Returns the existential deposit.
+    fn existential_deposit(&self) -> Balance;
+}
+
+impl ExistentialDepositProvider for Client {
+    fn existential_deposit(&self) -> Balance {
+        with_client! {
+            self,
+            _client,
+            runtime::ExistentialDeposit::get()
+        }
+    }
+}
+*/
+
 /// Generates inherent data for the `benchmark overhead` command.
 ///
 /// Note: Should only be used for benchmarking.

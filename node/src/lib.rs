@@ -3,12 +3,12 @@
 #![warn(missing_docs)]
 #![allow(clippy::type_complexity, clippy::too_many_arguments, clippy::needless_return)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 mod chain_spec;
-pub(crate) mod cli;
+mod cli;
 mod client;
 mod command;
-#[cfg(feature = "runtime-benchmarks")]
-mod command_helper;
 #[cfg(feature = "manual-seal")]
 mod manual_seal;
 mod rpc;

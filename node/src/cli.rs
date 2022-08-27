@@ -266,8 +266,8 @@ impl CliConfiguration<Cli> for RunCmd {
     fn ws_max_out_buffer_capacity(&self) -> Result<Option<usize>> {
         self.base.ws_max_out_buffer_capacity()
     }
-    fn transaction_pool(&self) -> Result<TransactionPoolOptions> {
-        self.base.transaction_pool()
+    fn transaction_pool(&self, is_dev: bool) -> Result<TransactionPoolOptions> {
+        self.base.transaction_pool(is_dev)
     }
     fn max_runtime_instances(&self) -> Result<Option<usize>> {
         self.base.max_runtime_instances()

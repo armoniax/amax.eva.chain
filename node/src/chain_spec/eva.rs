@@ -33,15 +33,16 @@ pub fn development_config() -> Result<ChainSpec, String> {
             let alice = authority_keys_from_seed("Alice");
             genesis(
                 wasm_binary,
+                // Sudo account
+                accounts[0],
+                // Pre-funded accounts
+                endowed,
                 // Initial PoA authorities
                 vec![
                     // Alith with Alice
                     (accounts[0], alice.0, alice.1),
                 ],
-                // Sudo account
-                accounts[0],
-                // Pre-funded accounts
-                endowed,
+                // Technical committee members
                 vec![accounts[0], accounts[1], accounts[2]],
             )
         },
@@ -51,6 +52,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         // Protocol ID
         None,
+        // Fork ID
         None,
         // Properties
         Some(super::properties()),
@@ -77,9 +79,13 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
             let alice = authority_keys_from_seed("Alice");
-            let bob = authority_keys_from_seed("Alice");
+            let bob = authority_keys_from_seed("Bob");
             genesis(
                 wasm_binary,
+                // Sudo account
+                accounts[0], // Alith
+                // Pre-funded accounts
+                endowed,
                 // Initial PoA authorities
                 vec![
                     // Alith with Alice
@@ -87,10 +93,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                     // Baltathar with Bob
                     (accounts[1], bob.0, bob.1),
                 ],
-                // Sudo account
-                accounts[0], // Alith
-                // Pre-funded accounts
-                endowed,
+                // Technical committee members
                 vec![accounts[0], accounts[1], accounts[2]],
             )
         },
@@ -100,7 +103,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Protocol ID
         None,
-        // Fork ID.
+        // Fork ID
         None,
         // Properties
         Some(super::properties()),
@@ -116,13 +119,13 @@ fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
 /// Configure initial storage state for FRAME modules.
 fn genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
-    root_key: AccountId,
+    sudo_key: AccountId,
     endowed: Vec<(AccountId, Balance)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
     technical_committee: Vec<AccountId>,
 ) -> GenesisConfig {
     use eva_runtime::{
-        AuthoritiesConfig, BalancesConfig, BaseFeeConfig, SessionConfig, SudoConfig, SystemConfig,
+        AuthoritiesConfig, BalancesConfig, SessionConfig, SudoConfig, SystemConfig,
         TechnicalCommitteeConfig,
     };
     GenesisConfig {
@@ -130,6 +133,10 @@ fn genesis(
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
+        },
+        sudo: SudoConfig {
+            // Assign network admin rights.
+            key: Some(sudo_key),
         },
         // Monetary.
         balances: BalancesConfig { balances: endowed },
@@ -146,6 +153,7 @@ fn genesis(
         authorities: AuthoritiesConfig {
             keys: initial_authorities.iter().map(|x| (x.0)).collect::<Vec<_>>(),
         },
+        // Governance.
         technical_committee: TechnicalCommitteeConfig {
             members: technical_committee,
             phantom: Default::default(),
@@ -154,14 +162,6 @@ fn genesis(
         // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
-        base_fee: {
-            let mut d = BaseFeeConfig::default();
-            d.is_active = false;
-            d
-        },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(root_key),
-        },
+        base_fee: Default::default(),
     }
 }

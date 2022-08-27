@@ -17,7 +17,7 @@ ethereum = { version = "0.12.0", features = ["with-codec", "with-serde"] }
 ethereum-types = "0.13.1"
 
 # Frontier
-fc-rpc-core = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.25" }
+fc-rpc-core = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27" }
 
 # Local
 amax-eva-client-evm-tracing = { path = "../evm-tracing" }

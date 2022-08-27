@@ -25,10 +25,9 @@ use fc_rpc::{
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
 // Local
+use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
 use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
 use runtime_common::EthereumTransaction;
-
-use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
 
 use crate::tracing::RpcRequesters as TracingRpcRequesters;
 pub use crate::tracing::{EthApiExt, RpcConfig};
@@ -88,6 +87,9 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub fee_history_cache: FeeHistoryCache,
     /// Maximum fee history cache size.
     pub fee_history_cache_limit: FeeHistoryCacheLimit,
+    /// When using eth_call/eth_estimateGas, the maximum allowed gas limit will be
+    /// block.gas_limit * execute_gas_limit_multiplier.
+    pub execute_gas_limit_multiplier: u64,
     /// Ethereum data access overrides.
     pub overrides: Arc<OverrideHandle<Block>>,
     /// Cache for Ethereum block data.
@@ -183,6 +185,7 @@ where
         trace_filter_max_count,
         fee_history_cache,
         fee_history_cache_limit,
+        execute_gas_limit_multiplier,
         overrides,
         block_data_cache,
         chain,
@@ -212,7 +215,7 @@ where
             block_data_cache.clone(),
             fee_history_cache,
             fee_history_cache_limit,
-            fc_rpc::format::Geth,
+            execute_gas_limit_multiplier,
         )
         .into_rpc(),
     )?;

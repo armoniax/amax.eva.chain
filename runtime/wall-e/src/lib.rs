@@ -14,7 +14,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto,
+        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto, Zero,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
     ApplyExtrinsicResult, Permill,
@@ -217,6 +217,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+    type Event = Event;
     type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime, Balances>>;
     // TODO. need to check this value.
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
@@ -387,15 +388,15 @@ impl pallet_ethereum::Config for Runtime {
 }
 
 parameter_types! {
-    pub IsActive: bool = false;
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    pub DefaultElasticity: Permill = Zero::zero();
 }
 
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
     type Threshold = evm_config::BaseFeeThreshold;
-    type IsActive = IsActive;
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
+    type DefaultElasticity = DefaultElasticity;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
