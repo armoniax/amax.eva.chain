@@ -511,7 +511,6 @@ where
 pub fn new_full<RuntimeApi, Executor>(
     config: Configuration,
     cli: &Cli,
-    chain: Chain,
 ) -> Result<TaskManager, ServiceError>
 where
     RuntimeApi:
@@ -526,7 +525,7 @@ where
         backend,
         mut task_manager,
         import_queue,
-        mut keystore_container,
+        keystore_container,
         select_chain,
         transaction_pool,
         other:
@@ -538,18 +537,6 @@ where
                 (fee_history_cache, fee_history_cache_limit),
             ),
     } = new_partial::<RuntimeApi, Executor>(&config, cli)?;
-
-    if let Some(url) = &config.keystore_remote {
-        match remote_keystore(url) {
-            Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) => {
-                return Err(ServiceError::Other(format!(
-                    "Error hooking up remote keystore for {}: {}",
-                    url, e
-                )))
-            },
-        };
-    }
 
     let (network, system_rpc_tx, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
