@@ -31,7 +31,7 @@ pub fn development_chain_spec() -> ChainSpec {
         // Name
         "Eva Development",
         // ID
-        "eva_dev",
+        "eva-dev",
         ChainType::Development,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
@@ -80,7 +80,7 @@ pub fn local_testnet_chain_spec() -> ChainSpec {
         // Name
         "Eva Local Testnet",
         // ID
-        "eva_local_testnet",
+        "eva-local",
         ChainType::Local,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();

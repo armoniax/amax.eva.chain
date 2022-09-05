@@ -31,7 +31,7 @@ pub fn development_chain_spec() -> ChainSpec {
         // Name
         "Wall-e Development",
         // ID
-        "wall_e_dev",
+        "wall-e-dev",
         ChainType::Development,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
@@ -75,7 +75,7 @@ pub fn local_testnet_chain_spec() -> ChainSpec {
         // Name
         "Wall-e Local Testnet",
         // ID
-        "wall_e_local_testnet",
+        "wall-e-local",
         ChainType::Local,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();

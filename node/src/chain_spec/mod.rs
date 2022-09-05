@@ -24,7 +24,7 @@ impl IdentifyVariant for &str {
     }
 
     fn is_wall_e(&self) -> bool {
-        self.starts_with("wall_e")
+        self.starts_with("wall-e") || self.starts_with("dev")
     }
 }
 
@@ -49,7 +49,7 @@ impl IdentifyVariant for Box<dyn ChainSpec> {
 }
 
 /// Runtime chain spec.
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum RuntimeChainSpec {
     Eva,
     WallE,

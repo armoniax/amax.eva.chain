@@ -49,12 +49,12 @@ use runtime_common::{
 };
 use wall_e_runtime_constants::{currency, evm, fee, system, time};
 // re-exports
-pub use wall_e_runtime_constants as constants;
 pub use primitives_core as primitives;
 pub use primitives_core::{
     AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
     Signature,
 };
+pub use wall_e_runtime_constants as constants;
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -391,7 +391,8 @@ impl pallet_ethereum::Config for Runtime {
 
 parameter_types! {
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-    pub DefaultElasticity: Permill = Zero::zero();
+    // pub DefaultElasticity: Permill = Permill::from_parts(125_000);  // enable base fee
+    pub DefaultElasticity: Permill = Zero::zero();                  // disable base fee
 }
 
 impl pallet_base_fee::Config for Runtime {

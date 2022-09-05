@@ -151,32 +151,26 @@ pub(crate) fn get_chain_spec() -> Option<RuntimeChainSpec> {
 
 impl DefaultConfigurationValues for Cli {
     fn p2p_listen_port() -> u16 {
-        let chain_spec =
-            get_chain_spec().expect("ChainSpec must be set before this function is called");
-        match chain_spec {
-            RuntimeChainSpec::Eva => 9992,
-            RuntimeChainSpec::WallE => 19992,
-            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
+        match get_chain_spec() {
+            Some(RuntimeChainSpec::Eva) | None => 9992,
+            Some(RuntimeChainSpec::WallE) => 19992,
+            Some(RuntimeChainSpec::Unknown) => panic!("Unknown chain spec"),
         }
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        let chain_spec =
-            get_chain_spec().expect("ChainSpec must be set before this function is called");
-        match chain_spec {
-            RuntimeChainSpec::Eva => 9994,
-            RuntimeChainSpec::WallE => 19994,
-            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
+        match get_chain_spec() {
+            Some(RuntimeChainSpec::Eva) | None => 9994,
+            Some(RuntimeChainSpec::WallE) => 19994,
+            Some(RuntimeChainSpec::Unknown) => panic!("Unknown chain spec"),
         }
     }
 
     fn rpc_http_listen_port() -> u16 {
-        let chain_spec =
-            get_chain_spec().expect("ChainSpec must be set before this function is called");
-        match chain_spec {
-            RuntimeChainSpec::Eva => 9993,
-            RuntimeChainSpec::WallE => 19993,
-            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
+        match get_chain_spec() {
+            Some(RuntimeChainSpec::Eva) | None => 9993,
+            Some(RuntimeChainSpec::WallE) => 19993,
+            Some(RuntimeChainSpec::Unknown) => panic!("Unknown chain spec"),
         }
     }
 
