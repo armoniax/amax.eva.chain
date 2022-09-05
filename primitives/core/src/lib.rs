@@ -38,9 +38,3 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-
-#[derive(Copy, Clone, Eq, PartialEq, sp_runtime::RuntimeDebug)]
-pub enum Chain {
-    Eva,
-    WallE,
-}

@@ -25,18 +25,28 @@ use fc_rpc::{
 use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
 // Local
-use primitives_core::{AccountId, Balance, Block, Chain, Hash, Index};
+use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
+use primitives_core::{AccountId, Balance, Block, Hash, Index};
 use runtime_common::EthereumTransaction;
 
-use amax_eva_rpc::{Debug as DebugRpc, DebugApiServer, TxPool as TxPoolRpc, TxPoolApiServer};
-
-use crate::tracing::RpcRequesters as TracingRpcRequesters;
 pub use crate::tracing::{EthApiExt, RpcConfig};
+use crate::{chain_spec::RuntimeChainSpec, tracing::RpcRequesters as TracingRpcRequesters};
 
 enum TransactionConverter {
     Eva(eva_runtime::TransactionConverter),
     WallE(wall_e_runtime::TransactionConverter),
 }
+
+impl From<RuntimeChainSpec> for TransactionConverter {
+    fn from(chain: RuntimeChainSpec) -> Self {
+        match chain {
+            RuntimeChainSpec::Eva => Self::Eva(eva_runtime::TransactionConverter::new()),
+            RuntimeChainSpec::WallE => Self::WallE(wall_e_runtime::TransactionConverter::new()),
+            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
+        }
+    }
+}
+
 impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for TransactionConverter {
     fn convert_transaction(
         &self,
@@ -45,15 +55,6 @@ impl fp_rpc::ConvertTransaction<primitives_core::UncheckedExtrinsic> for Transac
         match &self {
             Self::Eva(inner) => inner.convert_transaction(transaction),
             Self::WallE(inner) => inner.convert_transaction(transaction),
-        }
-    }
-}
-
-impl From<Chain> for TransactionConverter {
-    fn from(chain: Chain) -> Self {
-        match chain {
-            Chain::Eva => Self::Eva(eva_runtime::TransactionConverter::new()),
-            Chain::WallE => Self::WallE(wall_e_runtime::TransactionConverter::new()),
         }
     }
 }
@@ -88,12 +89,15 @@ pub struct FullDeps<C, P, A: ChainApi> {
     pub fee_history_cache: FeeHistoryCache,
     /// Maximum fee history cache size.
     pub fee_history_cache_limit: FeeHistoryCacheLimit,
+    /// When using eth_call/eth_estimateGas, the maximum allowed gas limit will be
+    /// block.gas_limit * execute_gas_limit_multiplier.
+    pub execute_gas_limit_multiplier: u64,
     /// Ethereum data access overrides.
     pub overrides: Arc<OverrideHandle<Block>>,
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
     /// Amax Chain Type
-    pub chain: Chain,
+    pub chain: RuntimeChainSpec,
     /// Manual seal command sink
     #[cfg(feature = "manual-seal")]
     pub command_sink:
@@ -155,10 +159,10 @@ where
     A: ChainApi<Block = Block> + 'static,
 {
     // Substrate
-    use pallet_transaction_payment_rpc::{TransactionPaymentApiServer, TransactionPaymentRpc};
+    use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     #[cfg(feature = "manual-seal")]
     use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
-    use substrate_frame_rpc_system::{SystemApiServer, SystemRpc};
+    use substrate_frame_rpc_system::{System, SystemApiServer};
     // Frontier
     use fc_rpc::{
         Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
@@ -183,6 +187,7 @@ where
         trace_filter_max_count,
         fee_history_cache,
         fee_history_cache_limit,
+        execute_gas_limit_multiplier,
         overrides,
         block_data_cache,
         chain,
@@ -190,14 +195,14 @@ where
         command_sink,
     } = deps;
 
-    io.merge(SystemRpc::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
-    io.merge(TransactionPaymentRpc::new(client.clone()).into_rpc())?;
+    io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+    io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
+    // Ethereum compatibility
     let mut signers = Vec::new();
     if enable_dev_signer {
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
-
     io.merge(
         Eth::new(
             client.clone(),
@@ -212,7 +217,7 @@ where
             block_data_cache.clone(),
             fee_history_cache,
             fee_history_cache_limit,
-            fc_rpc::format::Geth,
+            execute_gas_limit_multiplier,
         )
         .into_rpc(),
     )?;

@@ -9,9 +9,8 @@ use std::{
 use futures::{future, StreamExt};
 // Substrate
 use sc_cli::SubstrateCli;
-use sc_client_api::BlockchainEvents;
+use sc_client_api::{BlockchainEvents, StateBackendFor};
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
-use sc_keystore::LocalKeystore;
 use sc_service::{
     error::Error as ServiceError, BasePath, Configuration, PartialComponents, TaskManager,
 };
@@ -26,20 +25,20 @@ use sp_api::ConstructRuntimeApi;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Local
-use crate::chain_spec::IdentifyVariant;
-use primitives_core::{Block, Chain};
+use primitives_core::Block;
 
 #[cfg(feature = "manual-seal")]
 use crate::cli::Sealing;
 use crate::{
+    chain_spec::{RuntimeChain, RuntimeChainSpec},
     cli::Cli,
     client::{Client, EvaExecutor, RuntimeApiCollection, WallEExecutor},
 };
 
 pub type FullClient<RuntimeApi, Executor> =
     sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>;
-type FullBackend = sc_service::TFullBackend<Block>;
-type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+pub type FullBackend = sc_service::TFullBackend<Block>;
+pub type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 #[cfg(feature = "aura")]
 pub type ConsensusResult<RuntimeApi, Executor> = (
@@ -66,6 +65,17 @@ pub type ConsensusResult<RuntimeApi, Executor> = (
     Sealing,
 );
 
+pub(crate) fn db_config_dir(config: &Configuration) -> PathBuf {
+    config
+        .base_path
+        .as_ref()
+        .map(|base_path| base_path.config_dir(config.chain_spec.id()))
+        .unwrap_or_else(|| {
+            BasePath::from_project("", "", &Cli::executable_name())
+                .config_dir(config.chain_spec.id())
+        })
+}
+
 pub fn new_partial<RuntimeApi, Executor>(
     config: &Configuration,
     cli: &Cli,
@@ -90,7 +100,7 @@ where
     RuntimeApi:
         ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
     RuntimeApi::RuntimeApi:
-        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+        RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
     Executor: sc_executor::NativeExecutionDispatch + 'static,
 {
     if config.keystore_remote.is_some() {
@@ -239,25 +249,17 @@ where
     }
 }
 
-fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
-    // FIXME: here would the concrete keystore be built,
-    //        must return a concrete type (NOT `LocalKeystore`) that
-    //        implements `CryptoStore` and `SyncCryptoStore`
-    Err("Remote Keystore not supported.")
-}
-
 /// Builds a new service for a full client.
 #[cfg(feature = "aura")]
 pub fn new_full<RuntimeApi, Executor>(
     mut config: Configuration,
     cli: &Cli,
-    chain: Chain,
 ) -> Result<TaskManager, ServiceError>
 where
     RuntimeApi:
         ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
     RuntimeApi::RuntimeApi:
-        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+        RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
     Executor: NativeExecutionDispatch + 'static,
 {
     use sc_client_api::{BlockBackend, ExecutorProvider};
@@ -268,7 +270,7 @@ where
         backend,
         mut task_manager,
         import_queue,
-        mut keystore_container,
+        keystore_container,
         select_chain,
         transaction_pool,
         other:
@@ -280,18 +282,6 @@ where
                 (fee_history_cache, fee_history_cache_limit),
             ),
     } = new_partial::<RuntimeApi, Executor>(&config, cli)?;
-
-    if let Some(url) = &config.keystore_remote {
-        match remote_keystore(url) {
-            Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) => {
-                return Err(ServiceError::Other(format!(
-                    "Error hooking up remote keystore for {}: {}",
-                    url, e
-                )))
-            },
-        };
-    }
 
     let grandpa_protocol_name = sc_finality_grandpa::protocol_standard_name(
         &client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
@@ -371,6 +361,7 @@ where
             },
         );
         let trace_filter_max_count = cli.run.ethapi_trace_max_count;
+        let chain = config.chain_spec.runtime();
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -388,6 +379,7 @@ where
                 trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
+                execute_gas_limit_multiplier: 10,
                 overrides: overrides.clone(),
                 block_data_cache: block_data_cache.clone(),
                 chain,
@@ -519,13 +511,12 @@ where
 pub fn new_full<RuntimeApi, Executor>(
     config: Configuration,
     cli: &Cli,
-    chain: Chain,
 ) -> Result<TaskManager, ServiceError>
 where
     RuntimeApi:
         ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
     RuntimeApi::RuntimeApi:
-        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+        RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 
     Executor: NativeExecutionDispatch + 'static,
 {
@@ -534,7 +525,7 @@ where
         backend,
         mut task_manager,
         import_queue,
-        mut keystore_container,
+        keystore_container,
         select_chain,
         transaction_pool,
         other:
@@ -546,18 +537,6 @@ where
                 (fee_history_cache, fee_history_cache_limit),
             ),
     } = new_partial::<RuntimeApi, Executor>(&config, cli)?;
-
-    if let Some(url) = &config.keystore_remote {
-        match remote_keystore(url) {
-            Ok(k) => keystore_container.set_remote_keystore(k),
-            Err(e) => {
-                return Err(ServiceError::Other(format!(
-                    "Error hooking up remote keystore for {}: {}",
-                    url, e
-                )))
-            },
-        };
-    }
 
     let (network, system_rpc_tx, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -622,6 +601,7 @@ where
             },
         );
         let trace_filter_max_count = cli.run.ethapi_trace_max_count;
+        let chain = config.chain_spec.runtime();
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -639,6 +619,7 @@ where
                 trace_filter_max_count,
                 fee_history_cache: fee_history_cache.clone(),
                 fee_history_cache_limit,
+                execute_gas_limit_multiplier: 10,
                 overrides: overrides.clone(),
                 block_data_cache: block_data_cache.clone(),
                 chain,
@@ -725,29 +706,14 @@ where
     Ok(task_manager)
 }
 
-pub(crate) fn db_config_dir(config: &Configuration) -> PathBuf {
-    config
-        .base_path
-        .as_ref()
-        .map(|base_path| base_path.config_dir(config.chain_spec.id()))
-        .unwrap_or_else(|| {
-            BasePath::from_project("", "", &Cli::executable_name())
-                .config_dir(config.chain_spec.id())
-        })
-}
-
-#[allow(unreachable_code)]
 pub fn build_full(config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
-    // TODO `is_eva` `is_wall_e` need a marco to simplify them, including the similar code in
-    // command.rs file
-    if config.chain_spec.is_eva() {
-        return new_full::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli, Chain::Eva)
+    match config.chain_spec.runtime() {
+        RuntimeChainSpec::Eva => new_full::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli),
+        RuntimeChainSpec::WallE => {
+            new_full::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli)
+        },
+        RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
     }
-    if config.chain_spec.is_wall_e() {
-        return new_full::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli, Chain::WallE)
-    }
-    // if we add more runtime, this part need to make up those chain.
-    Err("All runtime type should be captured".into())
 }
 
 pub fn new_chain_ops(
@@ -762,40 +728,20 @@ pub fn new_chain_ops(
     ),
     ServiceError,
 > {
-    if config.chain_spec.is_eva() {
-        return new_chain_ops_inner::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli)
-    }
-    if config.chain_spec.is_wall_e() {
-        return new_chain_ops_inner::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli)
-    }
-    // if we add more runtime, this part need to make up those chain.
-    Err("All runtime type should be captured".into())
-}
-#[allow(clippy::type_complexity)]
-fn new_chain_ops_inner<RuntimeApi, Executor>(
-    mut config: &mut Configuration,
-    cli: &Cli,
-) -> Result<
-    (
-        Arc<Client>,
-        Arc<FullBackend>,
-        sc_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
-        TaskManager,
-    ),
-    ServiceError,
->
-where
-    Client: From<Arc<FullClient<RuntimeApi, Executor>>>,
-    RuntimeApi:
-        ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-    RuntimeApi::RuntimeApi:
-        RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
-    Executor: NativeExecutionDispatch + 'static,
-{
     config.keystore = sc_service::config::KeystoreConfig::InMemory;
-    let PartialComponents { client, backend, import_queue, task_manager, .. } =
-        new_partial::<RuntimeApi, Executor>(config, cli)?;
-    Ok((Arc::new(Client::from(client)), backend, import_queue, task_manager))
+    match config.chain_spec.runtime() {
+        RuntimeChainSpec::Eva => {
+            let PartialComponents { client, backend, import_queue, task_manager, .. } =
+                new_partial::<eva_runtime::RuntimeApi, EvaExecutor>(config, cli)?;
+            Ok((Arc::new(Client::Eva(client)), backend, import_queue, task_manager))
+        },
+        RuntimeChainSpec::WallE => {
+            let PartialComponents { client, backend, import_queue, task_manager, .. } =
+                new_partial::<wall_e_runtime::RuntimeApi, WallEExecutor>(config, cli)?;
+            Ok((Arc::new(Client::WallE(client)), backend, import_queue, task_manager))
+        },
+        RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
+    }
 }
 
 // Spawn frontier tasks.
@@ -823,7 +769,7 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
             Duration::new(2, 0),
             client.clone(),
             backend,
-            frontier_backend.clone(),
+            frontier_backend,
             3,
             0,
             SyncStrategy::Normal,
@@ -846,17 +792,6 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
     task_manager.spawn_essential_handle().spawn(
         "frontier-fee-history",
         Some("frontier"),
-        EthTask::fee_history_task(
-            client.clone(),
-            overrides,
-            fee_history_cache,
-            fee_history_cache_limit,
-        ),
-    );
-
-    task_manager.spawn_essential_handle().spawn(
-        "frontier-schema-cache-task",
-        Some("frontier"),
-        EthTask::ethereum_schema_cache_task(client, frontier_backend),
+        EthTask::fee_history_task(client, overrides, fee_history_cache, fee_history_cache_limit),
     );
 }

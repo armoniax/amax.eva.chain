@@ -14,7 +14,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        OpaqueKeys, PostDispatchInfoOf,
+        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
     ApplyExtrinsicResult, Permill,
@@ -24,7 +24,7 @@ use sp_version::RuntimeVersion;
 // Substrate FRAME
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU16, ConstU32, EnsureOneOf, KeyOwnerProofSystem},
+    traits::{ConstU16, ConstU32, EitherOfDiverse, KeyOwnerProofSystem},
     weights::{constants::RocksDbWeight, ConstantMultiplier},
 };
 use frame_system::EnsureRoot;
@@ -34,7 +34,6 @@ use pallet_evm::{
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
 // re-exports
-// A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_ethereum::{Call as EthereumCall, Transaction as EthereumTransaction};
@@ -42,10 +41,6 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
-use primitives_core::{
-    AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
-    Signature,
-};
 use runtime_common::{
     evm_config,
     pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
@@ -53,6 +48,13 @@ use runtime_common::{
     CoinbaseAuthor, ToAuthor,
 };
 use wall_e_runtime_constants::{currency, evm, fee, system, time};
+// re-exports
+pub use primitives_core as primitives;
+pub use primitives_core::{
+    AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
+    Signature,
+};
+pub use wall_e_runtime_constants as constants;
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -217,6 +219,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+    type Event = Event;
     type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime, Balances>>;
     // TODO. need to check this value.
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
@@ -334,7 +337,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 }
 
 /// 2/3 vote right for Technical members.
-type EnsureRootOrTwoThirdsTechnicalCommittee = EnsureOneOf<
+type EnsureRootOrTwoThirdsTechnicalCommittee = EitherOfDiverse<
     EnsureRoot<AccountId>,
     pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>,
 >;
@@ -387,15 +390,16 @@ impl pallet_ethereum::Config for Runtime {
 }
 
 parameter_types! {
-    pub IsActive: bool = false;
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    pub DefaultElasticity: Permill = Permill::from_parts(125_000);  // enable base fee
+    // pub DefaultElasticity: Permill = Zero::zero();                  // disable base fee
 }
 
 impl pallet_base_fee::Config for Runtime {
     type Event = Event;
     type Threshold = evm_config::BaseFeeThreshold;
-    type IsActive = IsActive;
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
+    type DefaultElasticity = DefaultElasticity;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -501,9 +505,11 @@ impl fp_self_contained::SelfContainedCall for Call {
     fn pre_dispatch_self_contained(
         &self,
         info: &Self::SignedInfo,
+        dispatch_info: &DispatchInfoOf<Call>,
+        len: usize,
     ) -> Option<Result<(), TransactionValidityError>> {
         match self {
-            Call::Ethereum(call) => call.pre_dispatch_self_contained(info),
+            Call::Ethereum(call) => call.pre_dispatch_self_contained(info, dispatch_info, len),
             _ => None,
         }
     }
@@ -799,19 +805,23 @@ impl_runtime_apis! {
             } else {
                 None
             };
+
             let is_transactional = false;
+            let validate = true;
+            let evm_config = config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config());
             <Runtime as pallet_evm::Config>::Runner::call(
                 from,
                 to,
                 data,
                 value,
-                gas_limit.low_u64(),
+                gas_limit.unique_saturated_into(),
                 max_fee_per_gas,
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
                 is_transactional,
-                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+                validate,
+                evm_config,
             ).map_err(|err| err.error.into())
         }
 
@@ -833,18 +843,22 @@ impl_runtime_apis! {
             } else {
                 None
             };
+
             let is_transactional = false;
+            let validate = true;
+            let evm_config = config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config());
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
                 data,
                 value,
-                gas_limit.low_u64(),
+                gas_limit.unique_saturated_into(),
                 max_fee_per_gas,
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
                 is_transactional,
-                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+                validate,
+                evm_config,
             ).map_err(|err| err.error.into())
         }
 

@@ -2,10 +2,14 @@
 use sc_service::ChainType;
 // Local
 use primitives_core::{AccountId, Balance};
-use wall_e_runtime::{AuraId, GenesisConfig, GrandpaId, SessionKeys, WASM_BINARY};
-use wall_e_runtime_constants::currency::UNITS;
+use wall_e_runtime::{
+    constants::currency::UNITS, AuraId, GenesisConfig, GrandpaId, SessionKeys, WASM_BINARY,
+};
 
-use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
+use super::{
+    key_helper::{authority_keys_from_seed, generate_dev_accounts},
+    properties,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -13,35 +17,37 @@ use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
-pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+pub fn development_chain_spec() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("wasm not available");
 
     // 0 Alith
     // 1 Baltathar
     // 2 Charleth
     // 3 Dorothy
-    let accounts = generate_dev_accounts(10);
+    // ...
+    let (sudo_key, accounts) = generate_dev_accounts(10);
 
-    Ok(ChainSpec::from_genesis(
+    ChainSpec::from_genesis(
         // Name
         "Wall-e Development",
         // ID
-        "wall_e_dev",
+        "wall-e-dev",
         ChainType::Development,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
             let alice = authority_keys_from_seed("Alice");
             genesis(
                 wasm_binary,
+                // Sudo account, Alith
+                sudo_key,
+                // Pre-funded accounts
+                endowed,
                 // Initial PoA authorities
                 vec![
                     // Alith with Alice
                     (accounts[0], alice.0, alice.1),
                 ],
-                // Sudo account
-                accounts[0],
-                // Pre-funded accounts
-                endowed,
+                // Technical committee memebers
                 vec![accounts[0], accounts[1], accounts[2]],
             )
         },
@@ -51,24 +57,25 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         // Protocol ID
         None,
+        // Fork ID
         None,
         // Properties
-        Some(super::properties()),
+        Some(properties()),
         // Extensions
         None,
-    ))
+    )
 }
 
-pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+pub fn local_testnet_chain_spec() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("wasm not available");
 
-    let accounts = generate_dev_accounts(10);
+    let (sudo_key, accounts) = generate_dev_accounts(10);
 
-    Ok(ChainSpec::from_genesis(
+    ChainSpec::from_genesis(
         // Name
         "Wall-e Local Testnet",
         // ID
-        "wall_e_local_testnet",
+        "wall-e-local",
         ChainType::Local,
         move || {
             let endowed = accounts.clone().into_iter().map(|k| (k, 100000 * UNITS)).collect();
@@ -76,6 +83,10 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             let bob = authority_keys_from_seed("Bob");
             genesis(
                 wasm_binary,
+                // Sudo account, Alith
+                sudo_key,
+                // Pre-funded accounts
+                endowed,
                 // Initial PoA authorities
                 vec![
                     // Alith with Alice
@@ -83,10 +94,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                     // Baltathar with Bob
                     (accounts[1], bob.0, bob.1),
                 ],
-                // Sudo account
-                accounts[0], // Alith
-                // Pre-funded accounts
-                endowed,
+                // Technical committee members
                 vec![accounts[0], accounts[1], accounts[2]],
             )
         },
@@ -96,13 +104,13 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Protocol ID
         None,
-        // Fork ID.
+        // Fork ID
         None,
         // Properties
-        Some(super::properties()),
+        Some(properties()),
         // Extensions
         None,
-    ))
+    )
 }
 
 fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
@@ -112,13 +120,13 @@ fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
 /// Configure initial storage state for FRAME modules.
 fn genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
-    root_key: AccountId,
+    sudo_key: AccountId,
     endowed: Vec<(AccountId, Balance)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
     technical_committee: Vec<AccountId>,
 ) -> GenesisConfig {
     use wall_e_runtime::{
-        AuthoritiesConfig, BalancesConfig, BaseFeeConfig, SessionConfig, SudoConfig, SystemConfig,
+        AuthoritiesConfig, BalancesConfig, SessionConfig, SudoConfig, SystemConfig,
         TechnicalCommitteeConfig,
     };
     GenesisConfig {
@@ -126,6 +134,10 @@ fn genesis(
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
+        },
+        sudo: SudoConfig {
+            // Assign network admin rights.
+            key: Some(sudo_key),
         },
         // Monetary.
         balances: BalancesConfig { balances: endowed },
@@ -142,6 +154,7 @@ fn genesis(
         authorities: AuthoritiesConfig {
             keys: initial_authorities.iter().map(|x| (x.0)).collect::<Vec<_>>(),
         },
+        // Governance.
         technical_committee: TechnicalCommitteeConfig {
             members: technical_committee,
             phantom: Default::default(),
@@ -150,14 +163,6 @@ fn genesis(
         // Evm compatibility.
         evm: Default::default(),
         ethereum: Default::default(),
-        base_fee: {
-            let mut d = BaseFeeConfig::default();
-            d.is_active = false;
-            d
-        },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(root_key),
-        },
+        base_fee: Default::default(),
     }
 }

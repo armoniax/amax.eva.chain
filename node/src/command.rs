@@ -5,7 +5,7 @@ use sc_service::DatabaseSource;
 use fc_db::frontier_database_dir;
 
 use crate::{
-    chain_spec,
+    chain_spec::{self, RuntimeChain, RuntimeChainSpec},
     cli::{Cli, Subcommand},
     service::{self, db_config_dir},
 };
@@ -36,43 +36,23 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
-        let (spec1, spec2): (Box<dyn ChainSpec>, Box<dyn ChainSpec>) = match id {
-            "" | "wall-e-dev" | "dev" => {
-                let spec = chain_spec::wall_e::development_config()?;
-                (Box::new(spec.clone()), Box::new(spec))
-            },
-            "wall-e-local" => {
-                let spec = chain_spec::wall_e::local_testnet_config()?;
-                (Box::new(spec.clone()), Box::new(spec))
-            },
-            "eva-dev" => {
-                let spec = chain_spec::eva::development_config()?;
-                (Box::new(spec.clone()), Box::new(spec))
-            },
-            "eva-local" => {
-                let spec = chain_spec::eva::local_testnet_config()?;
-                (Box::new(spec.clone()), Box::new(spec))
-            },
-            path => {
-                let spec =
-                    chain_spec::wall_e::ChainSpec::from_json_file(std::path::PathBuf::from(path))?;
-                (Box::new(spec.clone()), Box::new(spec))
-            },
-        };
         // a hacky way to set network type directly.
-        crate::cli::set_chain_spec(spec2);
-        Ok(spec1)
+        crate::cli::set_chain_spec(id.runtime());
+        Ok(match id {
+            "" | "dev" | "wall-e-dev" => Box::new(chain_spec::wall_e::development_chain_spec()),
+            "wall-e-local" => Box::new(chain_spec::wall_e::local_testnet_chain_spec()),
+            "eva-dev" => Box::new(chain_spec::eva::development_chain_spec()),
+            "eva-local" => Box::new(chain_spec::eva::local_testnet_chain_spec()),
+            path => Box::new(chain_spec::wall_e::ChainSpec::from_json_file(path.into())?),
+        })
     }
 
     fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        use crate::chain_spec::IdentifyVariant;
-        if chain_spec.is_eva() {
-            return &eva_runtime::VERSION
+        match chain_spec.runtime() {
+            RuntimeChainSpec::Eva => &eva_runtime::VERSION,
+            RuntimeChainSpec::WallE => &wall_e_runtime::VERSION,
+            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
         }
-        if chain_spec.is_wall_e() {
-            return &wall_e_runtime::VERSION
-        }
-        unreachable!("All chains should be captured");
     }
 }
 
@@ -150,9 +130,17 @@ pub fn run() -> sc_cli::Result<()> {
         },
         #[cfg(feature = "runtime-benchmarks")]
         Some(Subcommand::Benchmark(cmd)) => {
-            use crate::command_helper::{inherent_benchmark_data, BenchmarkExtrinsicBuilder};
-            use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-            use std::sync::Arc;
+            use crate::{
+                benchmarking::{
+                    inherent_benchmark_data, ExistentialDepositProvider, RemarkBuilder,
+                    TransferKeepAliveBuilder,
+                },
+                chain_spec::key_helper::alith_public,
+                client::{EvaExecutor, WallEExecutor},
+            };
+            use frame_benchmarking_cli::{
+                BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE,
+            };
 
             let runner = cli.create_runner(cmd)?;
             let chain_spec = &runner.config().chain_spec;
@@ -160,55 +148,51 @@ pub fn run() -> sc_cli::Result<()> {
             // This switch needs to be in the client, since the client decides
             // which sub-commands it wants to support.
             match cmd {
-                BenchmarkCmd::Pallet(cmd) => {
-                    use crate::{
-                        chain_spec::IdentifyVariant,
-                        client::{EvaExecutor, WallEExecutor},
-                    };
-                    if chain_spec.is_eva() {
-                        return runner
-                            .sync_run(|config| cmd.run::<eva_runtime::Block, EvaExecutor>(config))
-                    }
-                    if chain_spec.is_wall_e() {
-                        return runner.sync_run(|config| {
-                            cmd.run::<wall_e_runtime::Block, WallEExecutor>(config)
-                        })
-                    }
-                    Err(sc_cli::Error::Service(sc_service::Error::Other(
-                        "All chain should be captured".to_string(),
-                    )))
+                BenchmarkCmd::Pallet(cmd) => match chain_spec.runtime() {
+                    RuntimeChainSpec::Eva => {
+                        runner.sync_run(|config| cmd.run::<eva_runtime::Block, EvaExecutor>(config))
+                    },
+                    RuntimeChainSpec::WallE => runner
+                        .sync_run(|config| cmd.run::<wall_e_runtime::Block, WallEExecutor>(config)),
+                    RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
                 },
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
                     let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
-                    crate::client::unwrap_client!(client, cmd.run(client.clone()))
+                    unwrap_client!(client, cmd.run(client.clone()))
                 }),
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
                     let (client, backend, _, _) = service::new_chain_ops(&mut config, &cli)?;
-
                     let db = backend.expose_db();
                     let storage = backend.expose_storage();
-                    crate::client::unwrap_client!(
-                        client,
-                        cmd.run(config, client.clone(), db, storage)
-                    )
-                }),
-                BenchmarkCmd::Overhead(cmd) => runner.sync_run(|mut config| {
-                    let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
-
-                    let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
-                    crate::client::unwrap_client!(
-                        client,
-                        cmd.run(
-                            config,
-                            client.clone(),
-                            inherent_benchmark_data()?,
-                            Arc::new(ext_builder)
-                        )
-                    )
+                    unwrap_client!(client, cmd.run(config, client.clone(), db, storage))
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
                 },
+                BenchmarkCmd::Overhead(cmd) => runner.sync_run(|mut config| {
+                    let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
+                    let ext_builder = RemarkBuilder::new(client.clone());
+                    unwrap_client!(
+                        client,
+                        cmd.run(config, client.clone(), inherent_benchmark_data()?, &ext_builder)
+                    )
+                }),
+                BenchmarkCmd::Extrinsic(cmd) => runner.sync_run(|mut config| {
+                    let (client, _, _, _) = service::new_chain_ops(&mut config, &cli)?;
+                    // Register the *Remark* and *TKA* builders.
+                    let ext_factory = ExtrinsicFactory(vec![
+                        Box::new(RemarkBuilder::new(client.clone())),
+                        Box::new(TransferKeepAliveBuilder::new(
+                            client.clone(),
+                            alith_public().into(),
+                            client.existential_deposit(),
+                        )),
+                    ]);
+                    unwrap_client!(
+                        client,
+                        cmd.run(client.clone(), inherent_benchmark_data()?, &ext_factory)
+                    )
+                }),
             }
         },
         #[cfg(not(feature = "runtime-benchmarks"))]
@@ -251,7 +235,7 @@ pub fn run() -> sc_cli::Result<()> {
                 SubstrateCli::create_configuration(cli, &cli.run, tokio_handle)
             })?;
             runner.run_node_until_exit(|config| async move {
-                service::build_full(config, &cli).map_err(sc_cli::Error::Service)
+                service::build_full(config, &cli).map_err(Into::into)
             })
         },
     }
