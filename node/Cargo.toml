@@ -24,8 +24,9 @@ tiny-hderive = "0.3.0"
 tokio = { version = "1.17.0", features = ["signal", "rt-multi-thread", "parking_lot"] }
 
 # Parity
+codec = { package = "parity-scale-codec", version = "3.1" }
 jsonrpsee = { version = "0.14.0", features = ["server", "macros"] }
-libsecp256k1 = { version = "0.7", features = ["hmac"] }
+libsecp256k1 = { version = "0.7.1", features = ["hmac"] }
 
 # Substrate
 sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27" }
@@ -92,9 +93,7 @@ runtime-common = { path = "../runtime/common", default-features = false, feature
 amax-eva-rpc = { path = "../client/rpc" }
 
 eva-runtime = { path = "../runtime/eva", default-features = false, features = ["std"] }
-eva-runtime-constants = { path = "../runtime/eva/constants" }
 wall-e-runtime = { path = "../runtime/wall-e", default-features = false, features = ["std"] }
-wall-e-runtime-constants = { path = "../runtime/wall-e/constants" }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27" }

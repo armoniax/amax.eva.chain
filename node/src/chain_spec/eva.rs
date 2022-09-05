@@ -1,11 +1,15 @@
 // Substrate
 use sc_service::ChainType;
 // Local
-use eva_runtime::{AuraId, GenesisConfig, GrandpaId, SessionKeys, WASM_BINARY};
-use eva_runtime_constants::currency::UNITS;
+use eva_runtime::{
+    constants::currency::UNITS, AuraId, GenesisConfig, GrandpaId, SessionKeys, WASM_BINARY,
+};
 use primitives_core::{AccountId, Balance};
 
-use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
+use super::{
+    key_helper::{authority_keys_from_seed, generate_dev_accounts},
+    properties,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -13,16 +17,17 @@ use super::key_helper::{authority_keys_from_seed, generate_dev_accounts};
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
-pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+pub fn development_chain_spec() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("wasm not available");
 
     // 0 Alith
     // 1 Baltathar
     // 2 Charleth
     // 3 Dorothy
-    let accounts = generate_dev_accounts(10);
+    // ...
+    let (sudo_key, accounts) = generate_dev_accounts(10);
 
-    Ok(ChainSpec::from_genesis(
+    ChainSpec::from_genesis(
         // Name
         "Eva Development",
         // ID
@@ -33,8 +38,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
             let alice = authority_keys_from_seed("Alice");
             genesis(
                 wasm_binary,
-                // Sudo account
-                accounts[0],
+                // Sudo account, Alith
+                sudo_key,
                 // Pre-funded accounts
                 endowed,
                 // Initial PoA authorities
@@ -55,22 +60,23 @@ pub fn development_config() -> Result<ChainSpec, String> {
         // Fork ID
         None,
         // Properties
-        Some(super::properties()),
+        Some(properties()),
         // Extensions
         None,
-    ))
+    )
 }
 
-pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+pub fn local_testnet_chain_spec() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("wasm not available");
 
     // 0 Alith
     // 1 Baltathar
     // 2 Charleth
     // 3 Dorothy
-    let accounts = generate_dev_accounts(10);
+    // ...
+    let (sudo_key, accounts) = generate_dev_accounts(10);
 
-    Ok(ChainSpec::from_genesis(
+    ChainSpec::from_genesis(
         // Name
         "Eva Local Testnet",
         // ID
@@ -82,8 +88,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             let bob = authority_keys_from_seed("Bob");
             genesis(
                 wasm_binary,
-                // Sudo account
-                accounts[0], // Alith
+                // Sudo account, Alith
+                sudo_key,
                 // Pre-funded accounts
                 endowed,
                 // Initial PoA authorities
@@ -106,10 +112,10 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         // Fork ID
         None,
         // Properties
-        Some(super::properties()),
+        Some(properties()),
         // Extensions
         None,
-    ))
+    )
 }
 
 fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {

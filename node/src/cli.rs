@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+// Substrate
 use sc_cli::{
     build_runtime, ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams,
     KeystoreParams, NetworkParams, OffchainWorkerParams, Result, Role, Runner, SharedParams,
@@ -8,7 +9,7 @@ use sc_cli::{
 use sc_service::{config::PrometheusConfig, BasePath, Configuration, TransactionPoolOptions};
 use sc_telemetry::TelemetryEndpoints;
 
-use crate::chain_spec::IdentifyVariant;
+use crate::chain_spec::RuntimeChainSpec;
 
 /// Armonia Eva Node CLI.
 #[derive(Debug, clap::Parser)]
@@ -136,54 +137,47 @@ pub enum Subcommand {
     TryRuntime,
 }
 
-static mut GLOBAL_CHAIN_SPEC: Option<Box<dyn ChainSpec>> = None;
-pub(crate) fn set_chain_spec(chain_spec: Box<dyn ChainSpec>) {
+static mut GLOBAL_CHAIN_SPEC: Option<RuntimeChainSpec> = None;
+pub(crate) fn set_chain_spec(chain_spec: RuntimeChainSpec) {
     // this is safe, for this function should only be called in `load_spec`.
     unsafe {
         GLOBAL_CHAIN_SPEC = Some(chain_spec);
     }
 }
-#[allow(clippy::borrowed_box)]
-pub(crate) fn get_chain_spec() -> Option<&'static Box<dyn ChainSpec>> {
+pub(crate) fn get_chain_spec() -> Option<RuntimeChainSpec> {
     // this is safe, for this function is not written when called.
-    unsafe { GLOBAL_CHAIN_SPEC.as_ref() }
+    unsafe { GLOBAL_CHAIN_SPEC }
 }
 
 impl DefaultConfigurationValues for Cli {
     fn p2p_listen_port() -> u16 {
         let chain_spec =
             get_chain_spec().expect("ChainSpec must be set before this function is called");
-        if chain_spec.is_eva() {
-            return 9922
+        match chain_spec {
+            RuntimeChainSpec::Eva => 9992,
+            RuntimeChainSpec::WallE => 19992,
+            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
         }
-        if chain_spec.is_wall_e() {
-            return 19922
-        }
-        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_ws_listen_port() -> u16 {
         let chain_spec =
             get_chain_spec().expect("ChainSpec must be set before this function is called");
-        if chain_spec.is_eva() {
-            return 9944
+        match chain_spec {
+            RuntimeChainSpec::Eva => 9994,
+            RuntimeChainSpec::WallE => 19994,
+            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
         }
-        if chain_spec.is_wall_e() {
-            return 19944
-        }
-        unreachable!("All runtime type should be captured");
     }
 
     fn rpc_http_listen_port() -> u16 {
         let chain_spec =
             get_chain_spec().expect("ChainSpec must be set before this function is called");
-        if chain_spec.is_eva() {
-            return 9933
+        match chain_spec {
+            RuntimeChainSpec::Eva => 9993,
+            RuntimeChainSpec::WallE => 19993,
+            RuntimeChainSpec::Unknown => panic!("Unknown chain spec"),
         }
-        if chain_spec.is_wall_e() {
-            return 19933
-        }
-        unreachable!("All runtime type should be captured");
     }
 
     fn prometheus_listen_port() -> u16 {

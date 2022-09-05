@@ -34,7 +34,6 @@ use pallet_evm::{
 use pallet_grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::CurrencyAdapter;
 // re-exports
-// A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_ethereum::{Call as EthereumCall, Transaction as EthereumTransaction};
@@ -43,15 +42,18 @@ pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
 use eva_runtime_constants::{currency, evm, fee, system, time};
-use primitives_core::{
-    AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
-    Signature,
-};
 use runtime_common::{
     evm_config,
     pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
     precompiles::FrontierPrecompiles,
     CoinbaseAuthor, ToAuthor,
+};
+// re-exports
+pub use eva_runtime_constants as constants;
+pub use primitives_core as primitives;
+pub use primitives_core::{
+    AccountId, Address, Balance, Block as NodeBlock, BlockNumber, Hash, Header, Index, Moment,
+    Signature,
 };
 
 // To learn more about runtime versioning and what each of the following value means:

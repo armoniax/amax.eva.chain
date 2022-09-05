@@ -21,17 +21,23 @@
 
 use std::{sync::Arc, time::Duration};
 
+use codec::Encode;
 // Substrate
 use sc_client_api::UsageProvider;
-use sp_core::{crypto::DEV_PHRASE, ecdsa, Encode};
+use sp_core::{ecdsa, Pair, H256};
 use sp_inherents::{InherentData, InherentDataProvider};
-use sp_runtime::OpaqueExtrinsic;
+use sp_runtime::{
+    generic::{Era, SignedPayload},
+    traits::{Dispatchable, Extrinsic, SignedExtension},
+    OpaqueExtrinsic,
+};
 // Local
 use primitives_core::{AccountId, Balance};
 
 use crate::{
-    chain_spec::key_helper::{derive_bip44_pairs_from_mnemonic, get_account_id_from_pair},
-    client::Client,
+    chain_spec::key_helper::baltathar_pair,
+    client::{Client, EvaExecutor, WallEExecutor},
+    service::FullClient,
 };
 
 /// Generates extrinsics for the `benchmark overhead` command.
@@ -57,58 +63,23 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for RemarkBuilder {
         "remark"
     }
 
-    fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-        let acc = Sr25519Keyring::Bob.pair();
-        let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
-            self.client.as_ref(),
-            acc,
-            SystemCall::remark { remark: vec![] }.into(),
-            nonce,
-        )
-        .into();
-
-        Ok(extrinsic)
-    }
-
-    /*
-    fn remark(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
-        let acc = derive_bip44_pairs_from_mnemonic::<ecdsa::Public>(DEV_PHRASE, 2);
-        let sender = acc[1].clone();
-        let multi_client = self.client.as_ref();
-        with_signed_payload! {
-            multi_client,
-            {extra, client, raw_payload},
-            {
-                // First the setup code to init all the variables that are needed
-                // to build the signed extras.
-                use runtime::{Call, SystemCall};
+    fn build(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
+        with_client! {
+            self.client.as_ref(), client, {
+                use runtime::{Call, SystemCall, BlockHashCount};
 
                 let call = Call::System(SystemCall::remark { remark: vec![] });
-                let period = runtime::BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+                let signer = baltathar_pair();
 
-                let current_block = 0;
-                let tip = 0;
+                let period = BlockHashCount::get()
+                    .checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
                 let genesis = client.usage_info().chain.best_hash;
-            },
-            (period, current_block, nonce, tip, call, genesis),
-            {
-                // Use the payload to generate a signature.
-                let signature = raw_payload.using_encoded(|e| {
-                    let msg = sp_core::hashing::keccak_256(e);
-                    sender.sign_prehashed(&msg)
-                });
-                let signed = get_account_id_from_pair(sender).expect("must can generate account_id");
-                let ext = runtime::UncheckedExtrinsic::new_signed(
-                    call,
-                    signed,
-                    primitives_core::Signature::from(signature),
-                    extra,
-                );
-                return Ok(ext.into());
+
+                client.sign_call(call, nonce, 0, period, genesis, signer)
+                    .ok_or("Create signed extrinsic failed")
             }
         }
     }
-    */
 }
 
 /// Generates `Balances::TransferKeepAlive` extrinsics for the benchmarks.
@@ -123,11 +94,7 @@ pub struct TransferKeepAliveBuilder {
 impl TransferKeepAliveBuilder {
     /// Creates a new [`Self`] from the given client.
     pub fn new(client: Arc<Client>, dest: AccountId, value: Balance) -> Self {
-        Self {
-            client,
-            dest,
-            value,
-        }
+        Self { client, dest, value }
     }
 }
 
@@ -140,25 +107,28 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
         "transfer_keep_alive"
     }
 
-    fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-        let acc = Sr25519Keyring::Bob.pair();
-        let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
-            self.client.as_ref(),
-            acc,
-            BalancesCall::transfer_keep_alive {
-                dest: self.dest.clone().into(),
-                value: self.value,
-            }
-            .into(),
-            nonce,
-        )
-        .into();
+    fn build(&self, nonce: u32) -> Result<OpaqueExtrinsic, &'static str> {
+        with_client! {
+            self.client.as_ref(), client, {
+                use runtime::{Call, BalancesCall, BlockHashCount};
 
-        Ok(extrinsic)
+                let call = Call::Balances(BalancesCall::transfer_keep_alive {
+                    dest: self.dest,
+                    value: self.value,
+                 });
+                let signer = baltathar_pair();
+
+                let period = BlockHashCount::get()
+                    .checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+                let genesis = client.usage_info().chain.best_hash;
+
+                client.sign_call(call, nonce, 0, period, genesis, signer)
+                .ok_or("Create signed extrinsic failed")
+            }
+        }
     }
 }
 
-/*
 /// Provides the existential deposit that is only needed for benchmarking.
 pub trait ExistentialDepositProvider {
     /// Returns the existential deposit.
@@ -173,6 +143,223 @@ impl ExistentialDepositProvider for Client {
             runtime::ExistentialDeposit::get()
         }
     }
+}
+
+/// Helper trait to implement [`frame_benchmarking_cli::ExtrinsicBuilder`].
+///
+/// Should only be used for benchmarking since it makes strong assumptions
+/// about the chain state that these calls will be valid for.
+trait BenchmarkCallSigner<Call: Encode + Clone, Signer: Pair> {
+    /// Signs a call together with the signed extensions of the specific runtime.
+    ///
+    /// Only works if the current block is the genesis block since the
+    /// `CheckMortality` check is mocked by using the genesis block.
+    fn sign_call(
+        &self,
+        call: Call,
+        nonce: u32,
+        current_block: u64,
+        period: u64,
+        genesis: H256,
+        acc: Signer,
+    ) -> Option<OpaqueExtrinsic>;
+}
+
+impl BenchmarkCallSigner<eva_runtime::Call, ecdsa::Pair>
+    for FullClient<eva_runtime::RuntimeApi, EvaExecutor>
+{
+    fn sign_call(
+        &self,
+        call: eva_runtime::Call,
+        nonce: u32,
+        current_block: u64,
+        period: u64,
+        genesis: H256,
+        acc: ecdsa::Pair,
+    ) -> Option<OpaqueExtrinsic> {
+        use eva_runtime::{self as runtime, Runtime};
+
+        create_benchmark_extrinsic::<
+            runtime::Address,
+            runtime::Call,
+            runtime::Signature,
+            runtime::SignedExtra,
+            <runtime::SignedExtra as SignedExtension>::AdditionalSigned,
+            runtime::UncheckedExtrinsic,
+        >(
+            acc,
+            call,
+            (
+                frame_system::CheckNonZeroSender::<Runtime>::new(),
+                frame_system::CheckSpecVersion::<Runtime>::new(),
+                frame_system::CheckTxVersion::<Runtime>::new(),
+                frame_system::CheckGenesis::<Runtime>::new(),
+                frame_system::CheckMortality::<Runtime>::from(Era::mortal(period, current_block)),
+                frame_system::CheckNonce::<Runtime>::from(nonce),
+                frame_system::CheckWeight::<Runtime>::new(),
+                pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(0),
+            ),
+            (
+                (),
+                runtime::VERSION.spec_version,
+                runtime::VERSION.transaction_version,
+                genesis,
+                genesis,
+                (),
+                (),
+                (),
+            ),
+        )
+    }
+}
+
+impl BenchmarkCallSigner<wall_e_runtime::Call, ecdsa::Pair>
+    for FullClient<wall_e_runtime::RuntimeApi, WallEExecutor>
+{
+    fn sign_call(
+        &self,
+        call: wall_e_runtime::Call,
+        nonce: u32,
+        current_block: u64,
+        period: u64,
+        genesis: H256,
+        acc: ecdsa::Pair,
+    ) -> Option<OpaqueExtrinsic> {
+        use wall_e_runtime::{self as runtime, Runtime};
+
+        create_benchmark_extrinsic::<
+            runtime::Address,
+            runtime::Call,
+            runtime::Signature,
+            runtime::SignedExtra,
+            <runtime::SignedExtra as SignedExtension>::AdditionalSigned,
+            runtime::UncheckedExtrinsic,
+        >(
+            acc,
+            call,
+            (
+                frame_system::CheckNonZeroSender::<Runtime>::new(),
+                frame_system::CheckSpecVersion::<Runtime>::new(),
+                frame_system::CheckTxVersion::<Runtime>::new(),
+                frame_system::CheckGenesis::<Runtime>::new(),
+                frame_system::CheckMortality::<Runtime>::from(Era::mortal(period, current_block)),
+                frame_system::CheckNonce::<Runtime>::from(nonce),
+                frame_system::CheckWeight::<Runtime>::new(),
+                pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(0),
+            ),
+            (
+                (),
+                runtime::VERSION.spec_version,
+                runtime::VERSION.transaction_version,
+                genesis,
+                genesis,
+                (),
+                (),
+                (),
+            ),
+        )
+    }
+}
+
+/// Create a transaction using the given `call`.
+///
+/// Note: Should only be used for benchmarking.
+pub fn create_benchmark_extrinsic<
+    Address,
+    Call,
+    Signature,
+    SignedExtra,
+    AdditionalSigned,
+    UncheckedExtrinsic,
+>(
+    acc: ecdsa::Pair,
+    call: Call,
+    extra: SignedExtra,
+    additional_signed: AdditionalSigned,
+) -> Option<OpaqueExtrinsic>
+where
+    Address: From<ecdsa::Public>,
+    Call: Clone + Encode + Dispatchable,
+    Signature: From<ecdsa::Signature>,
+    SignedExtra: SignedExtension<Call = Call, AdditionalSigned = AdditionalSigned>,
+    UncheckedExtrinsic: Extrinsic<Call = Call, SignaturePayload = (Address, Signature, SignedExtra)>
+        + Into<OpaqueExtrinsic>,
+{
+    let raw_payload = SignedPayload::<Call, SignedExtra>::from_raw(
+        call.clone(),
+        extra.clone(),
+        additional_signed,
+    );
+    let signature = raw_payload.using_encoded(|p| {
+        // must use `keccak_256` hash for ethereum-liked system.
+        // the default hash for ecdsa in substrate is `blake2_256`
+        let msg = sp_core::hashing::keccak_256(p);
+        acc.sign_prehashed(&msg)
+    });
+
+    let sign_payload = (Address::from(acc.public()), Signature::from(signature), extra);
+    UncheckedExtrinsic::new(call, Some(sign_payload)).map(Into::into)
+}
+
+/*
+///
+/// Create a transaction using the given `call`.
+///
+/// Note: Should only be used for benchmarking.
+pub fn create_benchmark_extrinsic(
+    client: &FullClient,
+    sender: sr25519::Pair,
+    call: runtime::Call,
+    nonce: u32,
+) -> runtime::UncheckedExtrinsic {
+    let genesis_hash = client
+        .block_hash(0)
+        .ok()
+        .flatten()
+        .expect("Genesis block exists; qed");
+    let best_hash = client.chain_info().best_hash;
+    let best_block = client.chain_info().best_number;
+
+    let period = runtime::BlockHashCount::get()
+        .checked_next_power_of_two()
+        .map(|c| c / 2)
+        .unwrap_or(2) as u64;
+    let extra: runtime::SignedExtra = (
+        frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
+        frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
+        frame_system::CheckTxVersion::<runtime::Runtime>::new(),
+        frame_system::CheckGenesis::<runtime::Runtime>::new(),
+        frame_system::CheckMortality::<runtime::Runtime>::from(Era::mortal(
+            period,
+            best_block.saturated_into(),
+        )),
+        frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
+        frame_system::CheckWeight::<runtime::Runtime>::new(),
+        pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
+    );
+
+    let raw_payload = runtime::SignedPayload::from_raw(
+        call.clone(),
+        extra.clone(),
+        (
+            (),
+            runtime::VERSION.spec_version,
+            runtime::VERSION.transaction_version,
+            genesis_hash,
+            best_hash,
+            (),
+            (),
+            (),
+        ),
+    );
+    let signature = raw_payload.using_encoded(|e| sender.sign(e));
+
+    runtime::UncheckedExtrinsic::new_signed(
+        call,
+        AccountId32::from(sender.public()).into(),
+        runtime::Signature::Sr25519(signature),
+        extra,
+    )
 }
 */
 

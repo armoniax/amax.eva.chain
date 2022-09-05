@@ -108,7 +108,6 @@ dependencies = [
  "async-trait",
  "clap",
  "eva-runtime",
- "eva-runtime-constants",
  "fc-consensus",
  "fc-db",
  "fc-mapping-sync",
@@ -127,6 +126,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
+ "parity-scale-codec",
  "primitives-core",
  "primitives-evm-ext",
  "primitives-rpc",
@@ -170,7 +170,6 @@ dependencies = [
  "tokio",
  "try-runtime-cli",
  "wall-e-runtime",
- "wall-e-runtime-constants",
 ]
 
 [[package]]

@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 // Substrate
-use sc_client_api::{AuxStore, Backend as BackendT, BlockchainEvents, KeyIterator, UsageProvider};
-use sc_executor::NativeElseWasmExecutor;
-use sp_api::{CallApiAt, NumberFor, ProvideRuntimeApi};
-use sp_blockchain::{CachedHeaderMetadata, HeaderBackend, HeaderMetadata, Info};
+use sc_client_api::KeyIterator;
+use sp_api::NumberFor;
+use sp_blockchain::{CachedHeaderMetadata, Info};
 use sp_consensus::BlockStatus;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_runtime::{
@@ -16,14 +15,10 @@ use sp_storage::{ChildInfo, StorageData, StorageKey};
 // Local
 use primitives_core::{AccountId, Balance, Block, BlockNumber, Hash, Header, Index};
 
-pub type FullBackend = sc_service::TFullBackend<Block>;
-
-pub type FullClient<RuntimeApi, ExecutorDispatch> =
-    sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+use crate::service::{FullBackend, FullClient};
 
 /// The native executor instance for Eva.
 pub struct EvaExecutor;
-
 impl sc_executor::NativeExecutionDispatch for EvaExecutor {
     /// Only enable the benchmarking host functions when we actually want to benchmark.
     #[cfg(feature = "runtime-benchmarks")]
@@ -43,7 +38,6 @@ impl sc_executor::NativeExecutionDispatch for EvaExecutor {
 
 /// The native executor instance for Wall-e.
 pub struct WallEExecutor;
-
 impl sc_executor::NativeExecutionDispatch for WallEExecutor {
     #[cfg(feature = "runtime-benchmarks")]
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
@@ -100,45 +94,6 @@ where
 {
 }
 
-/// Trait that abstracts over all available client implementations.
-///
-/// For a concrete type there exists [`Client`].
-pub trait AbstractClient<Block, Backend>:
-    BlockchainEvents<Block>
-    + Sized
-    + Send
-    + Sync
-    + ProvideRuntimeApi<Block>
-    + HeaderBackend<Block>
-    + CallApiAt<Block, StateBackend = Backend::State>
-    + AuxStore
-    + UsageProvider<Block>
-where
-    Block: BlockT,
-    Backend: BackendT<Block>,
-    Backend::State: sp_api::StateBackend<BlakeTwo256>,
-    Self::Api: RuntimeApiCollection<StateBackend = Backend::State>,
-{
-}
-
-impl<Block, Backend, Client> AbstractClient<Block, Backend> for Client
-where
-    Block: BlockT,
-    Backend: BackendT<Block>,
-    Backend::State: sp_api::StateBackend<BlakeTwo256>,
-    Client: BlockchainEvents<Block>
-        + Sized
-        + Send
-        + Sync
-        + ProvideRuntimeApi<Block>
-        + HeaderBackend<Block>
-        + CallApiAt<Block, StateBackend = Backend::State>
-        + AuxStore
-        + UsageProvider<Block>,
-    Client::Api: RuntimeApiCollection<StateBackend = Backend::State>,
-{
-}
-
 /// A client instance of Eva/Wall-e Chain.
 ///
 /// See [`ExecuteWithClient`] for more information.
@@ -147,19 +102,9 @@ pub enum Client {
     Eva(Arc<FullClient<eva_runtime::RuntimeApi, EvaExecutor>>),
     WallE(Arc<FullClient<wall_e_runtime::RuntimeApi, WallEExecutor>>),
 }
-impl From<Arc<crate::FullClient<eva_runtime::RuntimeApi, EvaExecutor>>> for Client {
-    fn from(client: Arc<crate::FullClient<eva_runtime::RuntimeApi, EvaExecutor>>) -> Self {
-        Self::Eva(client)
-    }
-}
-impl From<Arc<crate::FullClient<wall_e_runtime::RuntimeApi, WallEExecutor>>> for Client {
-    fn from(client: Arc<crate::FullClient<wall_e_runtime::RuntimeApi, WallEExecutor>>) -> Self {
-        Self::WallE(client)
-    }
-}
 
 /// Unwraps a [`client::Client`] into the concrete runtime client.
-#[allow(unused)]
+#[cfg(feature = "runtime-benchmarks")]
 macro_rules! unwrap_client {
     (
 		$client:ident,
@@ -172,31 +117,149 @@ macro_rules! unwrap_client {
     };
 }
 
-#[allow(unused)]
-pub(crate) use unwrap_client;
-
 macro_rules! with_client {
 	{
-		$self:ident,
+        $self:expr,
 		$client:ident,
-		{
-			$( $code:tt )*
-		}
+        $code:expr
 	} => {
 		match $self {
-			Self::Eva($client) => { $( $code )* },
-			Self::WallE($client) => { $( $code )* },
+			Client::Eva($client) => {
+                #[allow(unused_imports)]
+                use eva_runtime as runtime;
+                $code
+             },
+			Client::WallE($client) => {
+                #[allow(unused_imports)]
+                use wall_e_runtime as runtime;
+                $code
+            },
 		}
 	}
 }
 
-impl UsageProvider<Block> for Client {
-    fn usage_info(&self) -> sc_client_api::ClientInfo<Block> {
+type HashFor<B> = <<B as BlockT>::Header as HeaderT>::Hash;
+
+impl sp_blockchain::HeaderBackend<Block> for Client {
+    fn header(&self, id: BlockId<Block>) -> sp_blockchain::Result<Option<Header>> {
         with_client! {
             self,
             client,
             {
-                client.usage_info()
+                client.header(&id)
+            }
+        }
+    }
+
+    fn info(&self) -> Info<Block> {
+        with_client! {
+            self,
+            client,
+            {
+                client.info()
+            }
+        }
+    }
+
+    fn status(&self, id: BlockId<Block>) -> sp_blockchain::Result<sp_blockchain::BlockStatus> {
+        with_client! {
+            self,
+            client,
+            {
+                client.status(id)
+            }
+        }
+    }
+
+    fn number(&self, hash: Hash) -> sp_blockchain::Result<Option<BlockNumber>> {
+        with_client! {
+            self,
+            client,
+            {
+                client.number(hash)
+            }
+        }
+    }
+
+    fn hash(&self, number: BlockNumber) -> sp_blockchain::Result<Option<Hash>> {
+        with_client! {
+            self,
+            client,
+            {
+                client.hash(number)
+            }
+        }
+    }
+}
+
+impl sp_blockchain::HeaderMetadata<Block> for Client {
+    type Error = sp_blockchain::Error;
+
+    fn header_metadata(
+        &self,
+        hash: HashFor<Block>,
+    ) -> Result<CachedHeaderMetadata<Block>, Self::Error> {
+        with_client! {
+            self,
+            client,
+            {
+                client.header_metadata(hash)
+            }
+        }
+    }
+
+    fn insert_header_metadata(
+        &self,
+        hash: HashFor<Block>,
+        header_metadata: CachedHeaderMetadata<Block>,
+    ) {
+        with_client! {
+            self,
+            client,
+            {
+                client.insert_header_metadata(hash, header_metadata)
+            }
+        }
+    }
+
+    fn remove_header_metadata(&self, hash: HashFor<Block>) {
+        with_client! {
+            self,
+            client,
+            {
+                client.remove_header_metadata(hash)
+            }
+        }
+    }
+}
+
+impl sc_client_api::AuxStore for Client {
+    fn insert_aux<
+        'a,
+        'b: 'a,
+        'c: 'a,
+        I: IntoIterator<Item = &'a (&'c [u8], &'c [u8])>,
+        D: IntoIterator<Item = &'a &'b [u8]>,
+    >(
+        &self,
+        insert: I,
+        delete: D,
+    ) -> sp_blockchain::Result<()> {
+        with_client! {
+            self,
+            client,
+            {
+                client.insert_aux(insert, delete)
+            }
+        }
+    }
+
+    fn get_aux(&self, key: &[u8]) -> sp_blockchain::Result<Option<Vec<u8>>> {
+        with_client! {
+            self,
+            client,
+            {
+                client.get_aux(key)
             }
         }
     }
@@ -296,7 +359,7 @@ impl sc_client_api::BlockBackend<Block> for Client {
     }
 }
 
-impl sc_client_api::StorageProvider<Block, crate::FullBackend> for Client {
+impl sc_client_api::StorageProvider<Block, FullBackend> for Client {
     fn storage(
         &self,
         id: &BlockId<Block>,
@@ -359,7 +422,7 @@ impl sc_client_api::StorageProvider<Block, crate::FullBackend> for Client {
         prefix: Option<&'a StorageKey>,
         start_key: Option<&StorageKey>,
     ) -> sp_blockchain::Result<
-        KeyIterator<'a, <crate::FullBackend as sc_client_api::Backend<Block>>::State, Block>,
+        KeyIterator<'a, <FullBackend as sc_client_api::Backend<Block>>::State, Block>,
     > {
         with_client! {
             self,
@@ -407,7 +470,7 @@ impl sc_client_api::StorageProvider<Block, crate::FullBackend> for Client {
         prefix: Option<&'a StorageKey>,
         start_key: Option<&StorageKey>,
     ) -> sp_blockchain::Result<
-        KeyIterator<'a, <crate::FullBackend as sc_client_api::Backend<Block>>::State, Block>,
+        KeyIterator<'a, <FullBackend as sc_client_api::Backend<Block>>::State, Block>,
     > {
         with_client! {
             self,
@@ -434,129 +497,13 @@ impl sc_client_api::StorageProvider<Block, crate::FullBackend> for Client {
     }
 }
 
-// This implementation is used to to support `Cmd::Revert` for the enum Client.
-impl HeaderBackend<Block> for Client {
-    fn header(&self, id: BlockId<Block>) -> sp_blockchain::Result<Option<Header>> {
+impl sc_client_api::UsageProvider<Block> for Client {
+    fn usage_info(&self) -> sc_client_api::ClientInfo<Block> {
         with_client! {
             self,
             client,
             {
-                client.header(&id)
-            }
-        }
-    }
-
-    fn info(&self) -> Info<Block> {
-        with_client! {
-            self,
-            client,
-            {
-                client.info()
-            }
-        }
-    }
-
-    fn status(&self, id: BlockId<Block>) -> sp_blockchain::Result<sp_blockchain::BlockStatus> {
-        with_client! {
-            self,
-            client,
-            {
-                client.status(id)
-            }
-        }
-    }
-
-    fn number(&self, hash: Hash) -> sp_blockchain::Result<Option<BlockNumber>> {
-        with_client! {
-            self,
-            client,
-            {
-                client.number(hash)
-            }
-        }
-    }
-
-    fn hash(&self, number: BlockNumber) -> sp_blockchain::Result<Option<Hash>> {
-        with_client! {
-            self,
-            client,
-            {
-                client.hash(number)
-            }
-        }
-    }
-}
-// This implementation is used to to support `Cmd::Revert` for the enum Client.
-impl AuxStore for Client {
-    fn insert_aux<
-        'a,
-        'b: 'a,
-        'c: 'a,
-        I: IntoIterator<Item = &'a (&'c [u8], &'c [u8])>,
-        D: IntoIterator<Item = &'a &'b [u8]>,
-    >(
-        &self,
-        insert: I,
-        delete: D,
-    ) -> sp_blockchain::Result<()> {
-        with_client! {
-            self,
-            client,
-            {
-                client.insert_aux(insert, delete)
-            }
-        }
-    }
-
-    fn get_aux(&self, key: &[u8]) -> sp_blockchain::Result<Option<Vec<u8>>> {
-        with_client! {
-            self,
-            client,
-            {
-                client.get_aux(key)
-            }
-        }
-    }
-}
-
-type HashFor<B> = <<B as BlockT>::Header as HeaderT>::Hash;
-// This implementation is used to to support `Cmd::Revert` for the enum Client.
-impl HeaderMetadata<Block> for Client {
-    type Error = sp_blockchain::Error;
-
-    fn header_metadata(
-        &self,
-        hash: HashFor<Block>,
-    ) -> Result<CachedHeaderMetadata<Block>, Self::Error> {
-        with_client! {
-            self,
-            client,
-            {
-                client.header_metadata(hash)
-            }
-        }
-    }
-
-    fn insert_header_metadata(
-        &self,
-        hash: HashFor<Block>,
-        header_metadata: CachedHeaderMetadata<Block>,
-    ) {
-        with_client! {
-            self,
-            client,
-            {
-                client.insert_header_metadata(hash, header_metadata)
-            }
-        }
-    }
-
-    fn remove_header_metadata(&self, hash: HashFor<Block>) {
-        with_client! {
-            self,
-            client,
-            {
-                client.remove_header_metadata(hash)
+                client.usage_info()
             }
         }
     }
