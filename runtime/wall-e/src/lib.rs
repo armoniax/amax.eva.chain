@@ -14,7 +14,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentityLookup, NumberFor,
-        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto, Zero,
+        OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
     ApplyExtrinsicResult, Permill,
@@ -391,8 +391,8 @@ impl pallet_ethereum::Config for Runtime {
 
 parameter_types! {
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-    // pub DefaultElasticity: Permill = Permill::from_parts(125_000);  // enable base fee
-    pub DefaultElasticity: Permill = Zero::zero();                  // disable base fee
+    pub DefaultElasticity: Permill = Permill::from_parts(125_000);  // enable base fee
+    // pub DefaultElasticity: Permill = Zero::zero();                  // disable base fee
 }
 
 impl pallet_base_fee::Config for Runtime {
