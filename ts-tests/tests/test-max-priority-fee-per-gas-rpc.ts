@@ -53,7 +53,7 @@ describeWithFrontier("Frontier RPC (Max Priority Fee Per Gas)", (context) => {
 	// - Every txn includes a monotonically increasing tip.
 	// - The oracle returns the minimum fee in the percentile 60 for the last 20 blocks.
 	// - In this case, and being the first tip 0, that minimum fee is 5.
-	it.skip("maxPriorityFeePerGas should suggest the percentile 60 tip", async function () {
+	step("maxPriorityFeePerGas should suggest the percentile 60 tip", async function () {
 		this.timeout(100000);
 
 		let block_count = 20;

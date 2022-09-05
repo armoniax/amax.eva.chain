@@ -301,68 +301,6 @@ where
     UncheckedExtrinsic::new(call, Some(sign_payload)).map(Into::into)
 }
 
-/*
-///
-/// Create a transaction using the given `call`.
-///
-/// Note: Should only be used for benchmarking.
-pub fn create_benchmark_extrinsic(
-    client: &FullClient,
-    sender: sr25519::Pair,
-    call: runtime::Call,
-    nonce: u32,
-) -> runtime::UncheckedExtrinsic {
-    let genesis_hash = client
-        .block_hash(0)
-        .ok()
-        .flatten()
-        .expect("Genesis block exists; qed");
-    let best_hash = client.chain_info().best_hash;
-    let best_block = client.chain_info().best_number;
-
-    let period = runtime::BlockHashCount::get()
-        .checked_next_power_of_two()
-        .map(|c| c / 2)
-        .unwrap_or(2) as u64;
-    let extra: runtime::SignedExtra = (
-        frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-        frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
-        frame_system::CheckTxVersion::<runtime::Runtime>::new(),
-        frame_system::CheckGenesis::<runtime::Runtime>::new(),
-        frame_system::CheckMortality::<runtime::Runtime>::from(Era::mortal(
-            period,
-            best_block.saturated_into(),
-        )),
-        frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
-        frame_system::CheckWeight::<runtime::Runtime>::new(),
-        pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
-    );
-
-    let raw_payload = runtime::SignedPayload::from_raw(
-        call.clone(),
-        extra.clone(),
-        (
-            (),
-            runtime::VERSION.spec_version,
-            runtime::VERSION.transaction_version,
-            genesis_hash,
-            best_hash,
-            (),
-            (),
-            (),
-        ),
-    );
-    let signature = raw_payload.using_encoded(|e| sender.sign(e));
-
-    runtime::UncheckedExtrinsic::new_signed(
-        call,
-        AccountId32::from(sender.public()).into(),
-        runtime::Signature::Sr25519(signature),
-        extra,
-    )
-}
-*/
-
 /// Generates inherent data for the `benchmark overhead` command.
 ///
 /// Note: Should only be used for benchmarking.

@@ -83,7 +83,7 @@ describeWithFrontier("Frontier RPC (Fee History)", (context) => {
 		}
 	});
 
-	it.skip("should calculate percentiles", async function () {
+	step("should calculate percentiles", async function () {
 		this.timeout(100000);
 		let blockCount = 11;
 		let rewardPercentiles = [20, 50, 70, 85, 100];

@@ -17,6 +17,7 @@ describeWithFrontier("Frontier RPC (Transaction Version)", (context) => {
 		const tx = await signer.sendTransaction(payload);
 		return tx;
 	}
+
 	step("should handle Legacy transaction type 0", async function () {
 		let tx = {
 			from: GENESIS_ACCOUNT,
