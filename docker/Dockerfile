@@ -5,7 +5,7 @@ ARG PROFILE=release
 
 RUN cd / && git clone -b $BUILD_BRANCH --recursive https://github.com/armoniax/amax.eva.chain.git
 WORKDIR /amax.eva.chain
-RUN bash -c "cargo build --$PROFILE"
+RUN bash -c "cargo build --${PROFILE}"
 
 ## 2nd stage
 FROM phusion/baseimage:0.11
