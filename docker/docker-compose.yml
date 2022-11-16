@@ -6,11 +6,12 @@ services:
     image: "$EVA_IMG_TAG"
     working_dir: "/opt/amax.eva.chain"
     ports:
-      - "9944:9944"
+      - "$RPC_PORT:9944"
+      - "$WS_PORT:9945"
     env_file:
         - .env
     environment:
-      - CARGO_HOME="/opt/${NET}/.cargo"
+      - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
       - "$RUN_SHARE:/root/.local"
     networks:
