@@ -1,8 +1,8 @@
 [package]
 name = "amax-eva"
 version = "0.1.0"
-edition = "2021"
-authors = ["Armonia Authors"]
+edition = "2022"
+authors = ["Armonia Core & DAO Devs"]
 license = "GPL-3.0"
 description = "armonia multichain - eva child chain"
 build = "build.rs"

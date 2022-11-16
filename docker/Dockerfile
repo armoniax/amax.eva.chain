@@ -1,5 +1,5 @@
 ## create amax_eva buildtime env
-FROM paritytech/ci-linux:974ba3ac-20201006
+FROM paritytech/ci-linux:production AS builder
 ARG BUILD_BRANCH=main
 ARG PROFILE=release
 
@@ -12,4 +12,4 @@ LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE=release
 ARG NET=devnet
 RUN mkdir -p /opt/$NET/amax.eva.chain
-COPY --from=0 ./target/${PROFILE}/amax-eva /opt/$NET/amax.eva.chain/amax-eva
+COPY --from=builder /amax.eva.chain/target/${PROFILE}/amax-eva /opt/$NET/amax.eva.chain/amax-eva
