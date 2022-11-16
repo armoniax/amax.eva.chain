@@ -1,2 +1,2 @@
 source ./.env
-docker build -t $EVA_IMG_TAG .
+DOCKER_BUILDKIT=1 docker build -t $EVA_IMG_TAG .
