@@ -10,6 +10,5 @@ RUN cd /amax.eva.chain && cargo build --${PROFILE}
 FROM parity/substrate:latest
 LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE=release
-ARG NET=devnet
-COPY --from=builder --chmod=755 "/amax.eva.chain/target/${PROFILE}/amax-eva" "/opt/$NET/amax-eva"
-ENTRYPOINT ["/opt/$NET/amax-eva"]
+COPY --from=builder --chmod=755 "/amax.eva.chain/target/${PROFILE}/amax-eva" "/opt/amax.eva.chain/amax-eva"
+ENTRYPOINT ["/opt/amax.eva.chain/amax-eva"]
