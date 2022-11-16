@@ -12,3 +12,4 @@ LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE=release
 ARG NET=devnet
 COPY --from=builder /amax.eva.chain/target/${PROFILE}/amax-eva /opt/$NET/amax-eva
+ENTRYPOINT ["/opt/$NET/amax-eva"]

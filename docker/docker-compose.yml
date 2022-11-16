@@ -11,4 +11,10 @@ services:
       - CARGO_HOME=/opt/${NET}/.cargo
     volumes:
       - "$RUN_SHARE:/root/.local"
-    command: bash -c "./amax-eva --${RUN_MODE} --ws-external"
+    networks:
+      - internet
+    command: "--${RUN_MODE} --ws-external"
+
+networks:
+  network-a:
+  internet:
