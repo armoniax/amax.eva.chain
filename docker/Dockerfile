@@ -11,5 +11,5 @@ FROM parity/substrate:latest
 LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE=release
 ARG NET=devnet
-COPY --from=builder --chmod=755 "/amax.eva.chain/target/${PROFILE}/amax-eva" "/opt/$NET/amax-eva"
+COPY --from=builder --chmod=755 "/amax.eva.chain/target/${PROFILE}/amax-eva" "/opt/$NET"
 ENTRYPOINT ["/opt/$NET/amax-eva"]
