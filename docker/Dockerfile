@@ -7,7 +7,7 @@ RUN cd / && git clone -b $BUILD_BRANCH --recursive https://github.com/armoniax/a
 RUN cd /amax.eva.chain && cargo build --${PROFILE}
 
 ## 2nd stage
-FROM phusion/baseimage:0.11
+FROM parity/substrate:latest
 LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE=release
 ARG NET=devnet

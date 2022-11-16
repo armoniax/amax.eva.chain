@@ -11,4 +11,4 @@ services:
       - CARGO_HOME=/opt/${NET}/amax.eva.chain/.cargo
     volumes:
       - "$RUN_SHARE:/root/.local"
-    command: bash -c "./amax.eva.chain --${RUN_MODE} --ws-external"
+    command: bash -c "./amax-eva --${RUN_MODE} --ws-external"
