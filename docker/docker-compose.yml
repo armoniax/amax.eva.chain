@@ -2,13 +2,13 @@ version: "3.2"
 
 services:
   amaxeva:
-    container_name: amax-eva-${NET}
+    container_name: "amax-eva-${NET}"
     image: "$EVA_IMG_TAG"
-    working_dir: /opt/${NET}
+    working_dir: "/opt/${NET}"
     ports:
       - "9944:9944"
     environment:
-      - CARGO_HOME=/opt/${NET}/.cargo
+      - CARGO_HOME="/opt/${NET}/.cargo"
     volumes:
       - "$RUN_SHARE:/root/.local"
     networks:
