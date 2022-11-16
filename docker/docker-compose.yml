@@ -4,11 +4,11 @@ services:
   amaxeva:
     container_name: amax-eva-${NET}
     image: "$EVA_IMG_TAG"
-    working_dir: /opt/${NET}/amax.eva.chain
+    working_dir: /opt/${NET}
     ports:
       - "9944:9944"
     environment:
-      - CARGO_HOME=/opt/${NET}/amax.eva.chain/.cargo
+      - CARGO_HOME=/opt/${NET}/.cargo
     volumes:
       - "$RUN_SHARE:/root/.local"
     command: bash -c "./amax-eva --${RUN_MODE} --ws-external"
