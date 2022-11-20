@@ -16,6 +16,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(assert_matches)]
+#![allow(clippy::all)]
 
 extern crate alloc;
 
