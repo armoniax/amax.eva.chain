@@ -5,6 +5,7 @@ pub mod key_helper;
 /// Wall-e chain spec.
 pub mod wall_e;
 
+use std::{fs::File, path::PathBuf};
 // Substrate
 use sc_chain_spec::{ChainSpec, Properties};
 
@@ -81,6 +82,36 @@ impl RuntimeChain for &dyn ChainSpec {
 impl RuntimeChain for Box<dyn ChainSpec> {
     fn runtime(&self) -> RuntimeChainSpec {
         self.as_ref().runtime()
+    }
+}
+
+impl RuntimeChain for ChainId {
+    fn runtime(&self) -> RuntimeChainSpec {
+        self.id.as_str().runtime()
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub struct ChainId {
+    pub id: String,
+}
+impl ChainId {
+    /// Parse json file into a `ChainSpec`.
+    pub fn from_json_file(path: PathBuf) -> Result<Self, String> {
+        // We mmap the file into memory first, as this is *a lot* faster than using
+        // `serde_json::from_reader`. See https://github.com/serde-rs/json/issues/160
+        let file = File::open(&path)
+            .map_err(|e| format!("Error opening spec file `{}`: {}", path.display(), e))?;
+
+        // SAFETY: `mmap` is fundamentally unsafe since technically the file can change
+        //         underneath us while it is mapped; in practice it's unlikely to be a problem
+        let bytes = unsafe {
+            memmap2::Mmap::map(&file)
+                .map_err(|e| format!("Error mmaping spec file `{}`: {}", path.display(), e))?
+        };
+        let client_spec = serde_json::from_slice(&bytes)
+            .map_err(|e| format!("Error parsing spec file: {}", e))?;
+        Ok(client_spec)
     }
 }
 
