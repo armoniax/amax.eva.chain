@@ -5,7 +5,7 @@ use sc_service::DatabaseSource;
 use fc_db::frontier_database_dir;
 
 use crate::{
-    chain_spec::{self, RuntimeChain, RuntimeChainSpec},
+    chain_spec::{self, ChainId, RuntimeChain, RuntimeChainSpec},
     cli::{Cli, Subcommand},
     service::{self, db_config_dir},
 };
@@ -43,7 +43,12 @@ impl SubstrateCli for Cli {
             "wall-e-local" => Box::new(chain_spec::wall_e::local_testnet_chain_spec()),
             "eva-dev" => Box::new(chain_spec::eva::development_chain_spec()),
             "eva-local" => Box::new(chain_spec::eva::local_testnet_chain_spec()),
-            path => Box::new(chain_spec::wall_e::ChainSpec::from_json_file(path.into())?),
+            path => {
+                // reset the global chain-spec again
+                let chain_id = ChainId::from_json_file(path.into())?;
+                crate::cli::set_chain_spec(chain_id.runtime());
+                Box::new(chain_spec::wall_e::ChainSpec::from_json_file(path.into())?)
+            },
         })
     }
 
