@@ -22,6 +22,8 @@ members = [
     "primitives/evm-tracing-events",
     "primitives/evm-ext",
     "primitives/evm-tracer",
+    # EVM precompiled
+    "precompiles/utils",
 ]
 resolver = "2"
 
