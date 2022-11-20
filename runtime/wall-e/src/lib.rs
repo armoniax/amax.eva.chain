@@ -3,6 +3,8 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+mod precompiles;
+
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
@@ -41,10 +43,10 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_finality_grandpa::AuthorityId as GrandpaId;
 // Local
+use crate::precompiles::WallEPrecompiles;
 use runtime_common::{
     evm_config,
     pallets::{authorities as pallet_authorities, privilege as pallet_privilege},
-    precompiles::FrontierPrecompiles,
     CoinbaseAuthor, ToAuthor,
 };
 use wall_e_runtime_constants::{currency, evm, fee, system, time};
@@ -363,7 +365,7 @@ impl pallet_membership::Config<TechnicalMembership> for Runtime {
 parameter_types! {
     pub const ChainId: u64 = 161;
     pub BlockGasLimit: U256 = U256::from(system::NORMAL_DISPATCH_RATIO * system::MAXIMUM_BLOCK_WEIGHT / evm::WEIGHT_PER_GAS);
-    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
+    pub PrecompilesValue: WallEPrecompiles<Runtime> = WallEPrecompiles::<_>::new();
 }
 
 impl pallet_evm::Config for Runtime {
@@ -375,7 +377,7 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = evm_config::IntoAddressMapping;
     type Currency = Balances;
     type Event = Event;
-    type PrecompilesType = FrontierPrecompiles<Self>;
+    type PrecompilesType = WallEPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;

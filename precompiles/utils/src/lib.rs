@@ -50,24 +50,18 @@ pub use precompile_utils_macro::{generate_function_selector, keccak256, precompi
 /// be used instead.
 #[must_use]
 pub fn revert(output: impl AsRef<[u8]>) -> PrecompileFailure {
-	PrecompileFailure::Revert {
-		exit_status: ExitRevert::Reverted,
-		output: encoded_revert(output),
-	}
+    PrecompileFailure::Revert { exit_status: ExitRevert::Reverted, output: encoded_revert(output) }
 }
 
 pub fn encoded_revert(output: impl AsRef<[u8]>) -> Vec<u8> {
-	EvmDataWriter::new_with_selector(revert::RevertSelector::Generic)
-		.write::<data::UnboundedBytes>(output.as_ref().to_owned().into())
-		.build()
+    EvmDataWriter::new_with_selector(revert::RevertSelector::Generic)
+        .write::<data::UnboundedBytes>(output.as_ref().to_owned().into())
+        .build()
 }
 
 #[must_use]
 pub fn succeed(output: impl AsRef<[u8]>) -> PrecompileOutput {
-	PrecompileOutput {
-		exit_status: ExitSucceed::Returned,
-		output: output.as_ref().to_owned(),
-	}
+    PrecompileOutput { exit_status: ExitSucceed::Returned, output: output.as_ref().to_owned() }
 }
 
 /// Alias for Result returning an EVM precompile error.
@@ -76,31 +70,29 @@ pub type EvmResult<T = ()> = Result<T, PrecompileFailure>;
 /// Trait similar to `fp_evm::Precompile` but with a `&self` parameter to manage some
 /// state (this state is only kept in a single transaction and is lost afterward).
 pub trait StatefulPrecompile {
-	/// Instanciate the precompile.
-	/// Will be called once when building the PrecompileSet at the start of each
-	/// Ethereum transaction.
-	fn new() -> Self;
+    /// Instanciate the precompile.
+    /// Will be called once when building the PrecompileSet at the start of each
+    /// Ethereum transaction.
+    fn new() -> Self;
 
-	/// Execute the precompile with a reference to its state.
-	fn execute(&self, handle: &mut impl PrecompileHandle) -> EvmResult<PrecompileOutput>;
+    /// Execute the precompile with a reference to its state.
+    fn execute(&self, handle: &mut impl PrecompileHandle) -> EvmResult<PrecompileOutput>;
 }
 
 pub mod prelude {
-	pub use {
-		crate::{
-			data::{
-				Address, BoundedBytes, BoundedString, BoundedVec, EvmData, EvmDataReader,
-				EvmDataWriter, SolidityConvert, UnboundedBytes, UnboundedString,
-			},
-			handle::PrecompileHandleExt,
-			logs::{log0, log1, log2, log3, log4, LogExt},
-			modifier::{check_function_modifier, FunctionModifier},
-			read_args, read_struct, revert,
-			revert::{BacktraceExt, InjectBacktrace, MayRevert, Revert, RevertExt, RevertReason},
-			substrate::{RuntimeHelper, TryDispatchError},
-			succeed, EvmResult, StatefulPrecompile,
-		},
-		pallet_evm::{PrecompileHandle, PrecompileOutput},
-		precompile_utils_macro::{generate_function_selector, keccak256, precompile},
-	};
+    pub use crate::{
+        data::{
+            Address, BoundedBytes, BoundedString, BoundedVec, EvmData, EvmDataReader,
+            EvmDataWriter, SolidityConvert, UnboundedBytes, UnboundedString,
+        },
+        handle::PrecompileHandleExt,
+        logs::{log0, log1, log2, log3, log4, LogExt},
+        modifier::{check_function_modifier, FunctionModifier},
+        read_args, read_struct, revert,
+        revert::{BacktraceExt, InjectBacktrace, MayRevert, Revert, RevertExt, RevertReason},
+        substrate::{RuntimeHelper, TryDispatchError},
+        succeed, EvmResult, StatefulPrecompile,
+    };
+    pub use pallet_evm::{PrecompileHandle, PrecompileOutput};
+    pub use precompile_utils_macro::{generate_function_selector, keccak256, precompile};
 }
