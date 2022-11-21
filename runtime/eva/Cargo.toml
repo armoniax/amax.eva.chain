@@ -60,6 +60,15 @@ pallet-base-fee = { git = "https://github.com/armoniax/frontier", branch = "eva-
 pallet-ethereum = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
 pallet-evm = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
 
+# Precompiled
+pallet-evm-precompile-blake2 = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
+pallet-evm-precompile-bn128 = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
+pallet-evm-precompile-modexp = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
+pallet-evm-precompile-sha3fips = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
+pallet-evm-precompile-simple = { git = "https://github.com/armoniax/frontier", branch = "eva-polkadot-v0.9.27", default-features = false }
+# Local Precompiled
+precompile-utils = { path = "../../precompiles/utils", default-features = false }
+
 # Local
 primitives-core = { path = "../../primitives/core", default-features = false }
 primitives-evm-tracer = { path = "../../primitives/evm-tracer", default-features = false, optional = true }
@@ -119,6 +128,14 @@ std = [
     "pallet-base-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
+    # Precompiled
+    "pallet-evm-precompile-blake2/std",
+    "pallet-evm-precompile-bn128/std",
+    "pallet-evm-precompile-modexp/std",
+    "pallet-evm-precompile-sha3fips/std",
+    "pallet-evm-precompile-simple/std",
+    # Local Precompiled
+    "precompile-utils/std",
     # Local
     "primitives-core/std",
     "primitives-rpc/std",
