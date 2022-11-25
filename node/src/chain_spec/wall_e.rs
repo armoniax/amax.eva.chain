@@ -1,3 +1,6 @@
+use hex_literal::hex;
+use sp_core::crypto::UncheckedInto;
+
 // Substrate
 use sc_service::ChainType;
 // Local
@@ -16,6 +19,11 @@ use super::{
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+
+pub fn testnet_endowed(accounts: &[AccountId]) -> Vec<(AccountId, Balance)> {
+    // Configure endowed accounts with initial balance of 1 << (4+18).
+    accounts.iter().map(|a| (*a, 20_0000 * UNITS)).collect()
+}
 
 pub fn development_chain_spec() -> ChainSpec {
     let wasm_binary = WASM_BINARY.expect("wasm not available");
@@ -73,7 +81,7 @@ pub fn local_testnet_chain_spec() -> ChainSpec {
 
     ChainSpec::from_genesis(
         // Name
-        "Wall-e Local Testnet",
+        "Wall-e Testnet Local",
         // ID
         "wall-e-local",
         ChainType::Local,
@@ -96,6 +104,66 @@ pub fn local_testnet_chain_spec() -> ChainSpec {
                 ],
                 // Technical committee members
                 vec![accounts[0], accounts[1], accounts[2]],
+            )
+        },
+        // Bootnodes
+        vec![],
+        // Telemetry
+        None,
+        // Protocol ID
+        None,
+        // Fork ID
+        None,
+        // Properties
+        Some(properties()),
+        // Extensions
+        None,
+    )
+}
+
+pub fn testnet_chain_spec() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("wasm not available");
+    ChainSpec::from_genesis(
+        // Name
+        "Wall-e Testnet",
+        // ID
+        "wall-e",
+        ChainType::Live,
+        move || {
+            let accounts = vec![
+                hex!["8315b078Cb5c268739c2AD9D5c29607023F44666"].into(), // m/44'/60'/0'/0/0 - sudo key
+                hex!["88033FBB419ceB06eA06ED628F1BC37aB506CD9A"].into(), // m/44'/60'/0'/0/1
+                hex!["957099192d41787F30bF6fc81abe7ceDe81Bea60"].into(), // m/44'/60'/0'/0/2
+                hex!["b655EFBe8006ea7439481a5Da8ebcbEEeC3d8D1f"].into(), // m/44'/60'/0'/0/3
+                hex!["7a894fBA436A071240EBcCc6Bdd387AF32447A8d"].into(), // m/44'/60'/0'/0/4
+            ];
+            let sudo_key: AccountId = accounts[0];
+            let endowed = testnet_endowed( &accounts );
+            let auras: Vec<AuraId> = vec![
+                hex!["2ea783defec0060c66c9cacf6a0fd614ba2505735d46f42b0b45460f49b3640c"].unchecked_into(), //1
+                hex!["bac08021b2721d91e4933597c5da524aa79e186768259753230e4d398c18bd7e"].unchecked_into(), //2
+                hex!["20e2418db201f89473764f669e099f84a02f745c07051fa9dd422c395f55b372"].unchecked_into(), //3
+                hex!["e050d82e84bfae6573016df009beb33417b11e1e7013a7d839ba305c14af8c73"].unchecked_into(), //4
+            ];
+        
+            let grandpas: Vec<GrandpaId> = vec![
+                hex!["defefca0316265154547dce658fc3772f9b2cc469ec0082991a0b2ea203aca5b"].unchecked_into(), //1
+                hex!["e8a3237372c738cdf09d2ec28ead04064ec60cd93cadd5f295083664591488cc"].unchecked_into(), //2
+                hex!["24166cdbadb5ed38409dfb86179d01836ce8e2f1942a52f82865da3ed7f5b063"].unchecked_into(), //3
+                hex!["6c075fdde3f5e1f0f2fdd3bdb08ba4803e0e274711c062070cbce65009cee966"].unchecked_into(), //4
+            ];
+
+            genesis(
+                wasm_binary,
+                sudo_key, // Sudo account
+                endowed, // Pre-funded accounts
+                //initial validators
+                vec![
+                    (accounts[1], auras[0].clone(), grandpas[0].clone()),
+                    (accounts[2], auras[1].clone(), grandpas[1].clone()),
+                ],
+                // Technical committee members
+                accounts
             )
         },
         // Bootnodes

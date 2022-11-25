@@ -42,18 +42,18 @@ pub fn derive_bip44_pairs_from_mnemonic<TPair: Pair>(
 ) -> Vec<TPair> {
     let seed = mnemonic_to_seed(mnemonic).expect("Wrong mnemonic provided");
 
-    let mut childs = Vec::new();
+    let mut pairs = Vec::new();
     for i in 0..num_accounts {
         if let Some(child_pair) = derive_bip44_pair_from_seed(
             seed.as_bytes(),
             &format!("{}{}", DEFAULT_DERIVATION_PATH_PREFIX, i),
         ) {
-            childs.push(child_pair);
+            pairs.push(child_pair);
         } else {
             log::error!("An error occurred while deriving key {} from parent", i)
         }
     }
-    childs
+    pairs
 }
 
 /// Helper function to get an `AccountId` from an ECDSA Key Pair.
