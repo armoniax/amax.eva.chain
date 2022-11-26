@@ -321,6 +321,8 @@ parameter_types! {
     pub const MaxProposals: u32 = 32;
     /// The maximum number of technical committee members.
     pub const TechnicalMaxMembers: u32 = 30;
+    /// The maximum number of xchain committee members/oracles
+    pub const XChainMaxMembers: u32 = 33;
 }
 
 type TechnicalCollective = pallet_collective::Instance1;
@@ -432,6 +434,11 @@ construct_runtime!(
         Privilege: pallet_privilege = 30,
         TechnicalCommittee: pallet_collective::<Instance1> = 31,
         TechnicalCommitteeMembership: pallet_membership::<Instance1> = 32,
+
+        // XChain.
+        // XchainPrivilege: pallet_privilege = 80,
+        // XchainCommittee: pallet_collective::<Instance1> = 81,
+        // XchainCommitteeMembership: pallet_membership::<Instance1> = 82,
 
         // Evm compatibility.
         EVM: pallet_evm = 100,

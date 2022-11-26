@@ -41,6 +41,7 @@ impl SubstrateCli for Cli {
         Ok(match id {
             "" | "dev" | "wall-e-dev" => Box::new(chain_spec::wall_e::development_chain_spec()),
             "wall-e-local" => Box::new(chain_spec::wall_e::local_testnet_chain_spec()),
+            "wall-e" => Box::new(chain_spec::wall_e::testnet_chain_spec()),
             "eva-dev" => Box::new(chain_spec::eva::development_chain_spec()),
             "eva-local" => Box::new(chain_spec::eva::local_testnet_chain_spec()),
             path => {
