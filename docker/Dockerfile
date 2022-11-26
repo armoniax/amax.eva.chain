@@ -5,7 +5,7 @@ ARG PROFILE=release
 ARG FEATURES=""
 
 RUN cd / && git clone -b $BUILD_BRANCH --recursive https://github.com/armoniax/amax.eva.chain.git
-RUN cd /amax.eva.chain && cargo build --${PROFILE} --features="${FEATURES}"
+RUN cd /amax.eva.chain && git pull && cargo build --${PROFILE} --features="${FEATURES}"
 
 ## 2nd stage
 FROM parity/substrate:latest
