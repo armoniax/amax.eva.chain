@@ -2,7 +2,12 @@ version: "3.2"
 
 services:
   amaxeva:
-    build: .
+    build: 
+      dockerfile: Dockerfile
+      args:
+        BUILD_BRANCH: "$BUILD_BRANCH"
+        PROFILE: "release"
+        FEATURES: "$FEATURES"
     container_name: "amax-eva-${NET}"
     # image: "$EVA_IMG_TAG"
     working_dir: "/opt/amax.eva.chain"
