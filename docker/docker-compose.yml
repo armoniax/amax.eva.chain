@@ -6,17 +6,18 @@ services:
     image: "$EVA_IMG_TAG"
     working_dir: "/opt/amax.eva.chain"
     ports:
-      - "$RPC_PORT:9944"
-      - "$WS_PORT:9945"
+      - "$P2P_PORT:19992"
+      - "$HTTP_PORT:19993"
+      - "$WS_PORT:19994"
     env_file:
         - .env
     environment:
       - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
-      - "$RUN_SHARE:/root/.local"
+      - "$DATA_SHARE:/opt/amax.eva.chain/data"
     networks:
       - internet
-    command: "--${RUN_MODE} --ws-external"
+    command: "--chain=$chain --keystore-path=./data/.validator $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
 
 networks:
   network-a:
