@@ -2,7 +2,7 @@ version: "3.2"
 
 services:
   amaxeva:
-    image: "$EVA_IMG_TAG"
+    image: "$IMGTAG"
     container_name: eva_${NET}_${TAG}
     working_dir: /opt/amax.eva.chain
     ports:
