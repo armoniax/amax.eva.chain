@@ -7,4 +7,4 @@ ENV_FILE=$CONF_DIR/eva.env
 
 mkdir -p $DATA_SHARE
 
-docker-compose up --build -d --env-file $ENV_FILE
+docker-compose up --build -d
