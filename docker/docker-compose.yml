@@ -10,7 +10,7 @@ services:
       - "$HTTP_PORT:19993"
       - "$WS_PORT:19994"
     env_file:
-        - .env
+        - ~/.amax_eva_$NET/eva.env
     environment:
       - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
