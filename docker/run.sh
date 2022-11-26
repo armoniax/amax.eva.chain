@@ -1,7 +1,7 @@
 source ./.env
 CONF_DIR=~/.amax_eva_$NET
 
-if ! -d $CONF_DIR; then mkdir -p $CONF_DIR && cp .env $CONF_DIR/eva.env; fi
+[ ! -d "$CONF_DIR/eva.env" ] && mkdir -p $CONF_DIR && cp .env $CONF_DIR/eva.env
 
 mkdir -p $DATA_SHARE
 
