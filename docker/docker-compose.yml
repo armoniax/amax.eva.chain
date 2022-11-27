@@ -10,13 +10,11 @@ services:
       - "$P2P_PORT:19992"
       - "$HTTP_PORT:19993"
       - "$WS_PORT:19994"
-    environment:
-      - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
       - "$EVA_SHARE:/opt/amax.eva.chain"
       - "$EVA_SHARE/chains:/opt/amax.eva.chain/chains"
-    networks:
-      - internet
+      - "~/.amax-eva/$NET/$TAG:$TAG"
 networks:
-  network-a:
-  internet:
+  default:
+    name: amax
+    external: true
