@@ -12,7 +12,6 @@ services:
       - "$HTTP_PORT:19993"
       - "$WS_PORT:19994"
     volumes:
-      - "$EVA_SHARE/data:/opt/amax.eva.chain/data"
       - "$EVA_SHARE/chains:/opt/amax.eva.chain/chains"
       - "~/.amax_eva/$NET/$TAG:/opt/amax.eva.chain/$TAG"
 networks:
