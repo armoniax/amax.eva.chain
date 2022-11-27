@@ -5,6 +5,7 @@ services:
     image: "$IMGTAG"
     container_name: eva_${NET}_${TAG}
     working_dir: /opt/amax.eva.chain
+    entrypoint: ["./amax-eva", "--chain=$CHAIN -d .", "--keystore-path=$TAG $ARG_VALIDATOR", "$ARG_RPC_METHODS", "$ARG_WS", "$ARG_BOOTNODES"]
     ports:
       - "$P2P_PORT:19992"
       - "$HTTP_PORT:19993"
@@ -16,8 +17,6 @@ services:
       - "$EVA_SHARE/chains:/opt/amax.eva.chain/chains"
     networks:
       - internet
-    command: "--chain=$CHAIN -d . --keystore-path=$TAG $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
-
 networks:
   network-a:
   internet:
