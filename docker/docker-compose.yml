@@ -13,9 +13,10 @@ services:
       - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
       - "$EVA_SHARE:/opt/amax.eva.chain"
+      - "$EVA_SHARE/chains:/opt/amax.eva.chain/chains"
     networks:
       - internet
-    command: "--chain=$CHAIN -d /opt/amax.eva.chain --keystore-path=$TAG $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
+    command: "--chain=$CHAIN -d . --keystore-path=$TAG $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
 
 networks:
   network-a:
