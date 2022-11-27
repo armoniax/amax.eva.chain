@@ -9,8 +9,6 @@ services:
       - "$P2P_PORT:19992"
       - "$HTTP_PORT:19993"
       - "$WS_PORT:19994"
-    env_file:
-      - ~/.amax_eva/$NET/${TAG}.env
     environment:
       - CARGO_HOME="/opt/amax.eva.chain/.cargo"
     volumes:
