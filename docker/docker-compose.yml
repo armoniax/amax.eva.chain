@@ -13,7 +13,7 @@ services:
     volumes:
       - "$EVA_SHARE:/opt/amax.eva.chain"
       - "$EVA_SHARE/chains:/opt/amax.eva.chain/chains"
-      - "~/.amax_eva/$NET/$TAG:$TAG"
+      - "~/.amax_eva/$NET/$TAG:/opt/amax.eva.chain/$TAG"
 networks:
   default:
     name: amax
