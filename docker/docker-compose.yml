@@ -17,7 +17,7 @@ services:
       - "$EVA_SHARE:/opt/amax.eva.chain"
     networks:
       - internet
-    command: "--chain=$CHAIN -d /opt/amax.eva.chain/data --keystore-path=./data/.validator $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
+    command: "--chain=$CHAIN -d /opt/amax.eva.chain --keystore-path=.validator $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $ARG_BOOTNODES"
 
 networks:
   network-a:
