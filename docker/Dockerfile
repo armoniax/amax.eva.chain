@@ -13,3 +13,8 @@ LABEL maintainer "Ray de Dragon Master"
 ARG PROFILE
 COPY --from=builder --chmod=755 "/amax.eva.chain/target/${PROFILE}/amax-eva" "/opt/amax.eva.chain/amax-eva"
 WORKDIR /opt/amax.eva.chain
+ENTRYPOINT ["amax-eva"]
+
+EXPOSE 1992
+EXPOSE 1993
+EXPOSE 1994
