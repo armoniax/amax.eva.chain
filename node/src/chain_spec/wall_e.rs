@@ -181,6 +181,8 @@ pub fn testnet_chain_spec() -> ChainSpec {
                     (accounts[1], auras[1].clone(), grandpas[1].clone()),
                     (accounts[2], auras[2].clone(), grandpas[2].clone()),
                     (accounts[3], auras[3].clone(), grandpas[3].clone()),
+                    (accounts[4], auras[4].clone(), grandpas[4].clone()),
+                    (accounts[5], auras[5].clone(), grandpas[5].clone()),
                 ],
                 // Technical committee members: 5
                 accounts,
