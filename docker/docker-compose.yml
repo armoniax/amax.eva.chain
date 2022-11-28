@@ -6,7 +6,7 @@ services:
     user: root
     container_name: eva_${NET}_${TAG}
     working_dir: /opt/amax.eva.chain
-    command: "--chain=$CHAIN -d . --keystore-path=$TAG $ARG_VALIDATOR $ARG_RPC_METHODS $ARG_WS $NODEKEY_FILE $ARG_BOOTNODES"
+    command: "--chain=$CHAIN -d . --keystore-path=$TAG $ARG_VALIDATOR $ARG_RPC $ARG_WS $NODEKEY_FILE $ARG_BOOTNODES"
     ports:
       - "$P2P_PORT:19992"
       - "$HTTP_PORT:19993"
