@@ -137,7 +137,8 @@ pub fn testnet_chain_spec() -> ChainSpec {
                 hex!["88033FBB419ceB06eA06ED628F1BC37aB506CD9A"].into(), // m/44'/60'/0'/0/1 - v1
                 hex!["957099192d41787F30bF6fc81abe7ceDe81Bea60"].into(), // m/44'/60'/0'/0/2 - v2
                 hex!["b655EFBe8006ea7439481a5Da8ebcbEEeC3d8D1f"].into(), // m/44'/60'/0'/0/3 - v3
-                hex!["7a894fBA436A071240EBcCc6Bdd387AF32447A8d"].into(), // m/44'/60'/0'/0/4
+                hex!["7a894fBA436A071240EBcCc6Bdd387AF32447A8d"].into(), // m/44'/60'/0'/0/4 - v4
+                hex!["8e12f8b301DBCb5F5d20655CA5f9F9AB8B4Bc8c4"].into()  // m/44'/60'/0'/0/5 - v5
             ];
             let sudo_key: AccountId = accounts[0];
             let endowed = testnet_endowed(&accounts);
@@ -151,7 +152,9 @@ pub fn testnet_chain_spec() -> ChainSpec {
                 hex!["20e2418db201f89473764f669e099f84a02f745c07051fa9dd422c395f55b372"]
                     .unchecked_into(), //3 - v3
                 hex!["e050d82e84bfae6573016df009beb33417b11e1e7013a7d839ba305c14af8c73"]
-                    .unchecked_into(), //4
+                    .unchecked_into(), //4 - v4
+                hex!["1a719769512e4ddb4806e79fee66e4d788374b829b4d4de360f6e9fc2c5cb51e"]
+                    .unchecked_into(), //5 - v5
             ];
 
             let grandpas: Vec<GrandpaId> = vec![
@@ -164,7 +167,9 @@ pub fn testnet_chain_spec() -> ChainSpec {
                 hex!["24166cdbadb5ed38409dfb86179d01836ce8e2f1942a52f82865da3ed7f5b063"]
                     .unchecked_into(), //3 - v3
                 hex!["6c075fdde3f5e1f0f2fdd3bdb08ba4803e0e274711c062070cbce65009cee966"]
-                    .unchecked_into(), //4
+                    .unchecked_into(), //4 - v4
+                hex!["f3767106ad455f2cfcd5419aaa9668ce16fb719f4b7ebcf140cffab3f6a34911"]
+                    .unchecked_into(), //5 - v5
             ];
 
             genesis(
