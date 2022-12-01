@@ -1,22 +1,10 @@
 // Substrate
-use sp_core::{H160, U256};
+use sp_core::H160;
 use sp_runtime::Permill;
 // Substrate FRAME
 use frame_support::weights::Weight;
 // Local
 use runtime_common_constants::evm::WEIGHT_PER_GAS;
-
-pub struct FixedGasPrice;
-impl pallet_evm::FeeCalculator for FixedGasPrice {
-    fn min_gas_price() -> (U256, Weight) {
-        // TODO check the min_gas_price implementation in moonbeam
-        // (
-        // 	(1 * currency::GIGAWEI * currency::SUPPLY_FACTOR).into(),
-        // 	0u64,
-        // )
-        (0.into(), 0u64)
-    }
-}
 
 /// And implementation of Frontier's AddressMapping trait for Moonbeam Accounts.
 /// This is basically identical to Frontier's own IdentityAddressMapping, but it works for any type
