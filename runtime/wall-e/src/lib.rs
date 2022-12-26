@@ -369,7 +369,7 @@ parameter_types! {
 }
 
 impl pallet_evm::Config for Runtime {
-    type FeeCalculator = evm_config::FixedGasPrice;
+    type FeeCalculator = BaseFee;
     type GasWeightMapping = evm_config::GasWeightMapping;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
     type CallOrigin = EnsureAddressRoot<AccountId>;
@@ -382,7 +382,8 @@ impl pallet_evm::Config for Runtime {
     type ChainId = ChainId;
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
-    type OnChargeTransaction = EVMCurrencyAdapter<Balances, ToAuthor<Runtime, Balances>>;
+    // We burn the BaseFee (set `()` to `EVMCurrencyAdapter` )
+    type OnChargeTransaction = EVMCurrencyAdapter<Balances, ()>;
     type FindAuthor = CoinbaseAuthor<Runtime, Aura>;
 }
 
@@ -392,7 +393,10 @@ impl pallet_ethereum::Config for Runtime {
 }
 
 parameter_types! {
+    /// This value config the default BaseFee at the chain start running
     pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    /// This is the floating ratio to adjust the BaseFee for every block
+    /// (every block increase or decrease 12.5% if system decide to adjust the BaseFee)
     pub DefaultElasticity: Permill = Permill::from_parts(125_000);  // enable base fee
     // pub DefaultElasticity: Permill = Zero::zero();                  // disable base fee
 }

@@ -3,7 +3,6 @@
 pub mod ethereum;
 pub mod evm_config;
 pub mod pallets;
-pub mod precompiles;
 
 // Substrate
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
